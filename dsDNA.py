@@ -11,23 +11,31 @@ import openmm.unit as unit
 from sys import stdout
 
 class EnergyDecompositionReporter(object):
-	def __init__(self, file, reportInterval, context, labels):
+	def __init__(self, file, reportInterval, labels):
 		self._out = open(file, 'w')
 		self._interval = reportInterval
-		self._context = context
 		self._labels = labels
 		self._out.write("Step " + " ".join(labels.values()) + "\n")
 
 	def describeNextReport(self, simulation):
-		return (self._interval, True, False, False, False)
+		steps_until_next_report = self._interval - simulation.currentStep % self._interval
+		return (steps_until_next_report, False, False, False, True)
 
 	def report(self, simulation, state):
 		step = simulation.currentStep
 		self._out.write(str(step))
+
 		for g in self._labels:
-			s = self._context.getState(getEnergy=True, groups={g})
-			self._out.write(f" {s.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)}")
+			s = simulation.context.getState(
+				getEnergy=True,
+				groups={g}
+			)
+			e = s.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
+			self._out.write(f" {e}")
+
 		self._out.write("\n")
+		self._out.flush()
+
 
 A2nm = 0.1
 
@@ -421,13 +429,13 @@ system.addForce(elec_force)
 
 
 # run the simulation
-integrator = mm.LangevinMiddleIntegrator(275*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
+integrator = mm.LangevinMiddleIntegrator(300*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
 simulation = app.Simulation(topology, system, integrator)
 simulation.context.setPositions(positions)
 
 simulation.minimizeEnergy()
 
-simulation.context.setVelocitiesToTemperature(275*unit.kelvin)
+simulation.context.setVelocitiesToTemperature(300*unit.kelvin)
 
 # setup simulation reporters
 # Write the trajectory to a file called 'traj.dcd'
@@ -439,10 +447,10 @@ simulation.reporters.append(app.StateDataReporter(stdout, 1_000, step=True,
 
 labels = {0:'bond',1:'angle',2:'stacking',3:'hb',4:'excluding',5:'elec'}
 
-simulation.reporters.append(EnergyDecompositionReporter('energy_components.dat',1,simulation.context,labels))
+simulation.reporters.append(EnergyDecompositionReporter('energy_components.dat',reportInterval=1_000,labels=labels))
 
 # NVT equilibration
-simulation.step(500_000)
+simulation.step(100_000)
 
 
 
