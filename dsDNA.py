@@ -10,6 +10,25 @@ import openmm.unit as unit
 
 from sys import stdout
 
+class EnergyDecompositionReporter(object):
+	def __init__(self, file, reportInterval, context, labels):
+		self._out = open(file, 'w')
+		self._interval = reportInterval
+		self._context = context
+		self._labels = labels
+		self._out.write("Step " + " ".join(labels.values()) + "\n")
+
+	def describeNextReport(self, simulation):
+		return (self._interval, True, False, False, False)
+
+	def report(self, simulation, state):
+		step = simulation.currentStep
+		self._out.write(str(step))
+		for g in self._labels:
+			s = self._context.getState(getEnergy=True, groups={g})
+			self._out.write(f" {s.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)}")
+		self._out.write("\n")
+
 A2nm = 0.1
 
 E_P = app.Element(number=1001, name='CGP', symbol='-p', mass=178.08)
@@ -128,13 +147,15 @@ harmonic_bond_force = mm.HarmonicBondForce()
 
 for bond in topology.bonds():
 	if bond.atom1.name == 'CGP' and bond.atom2.name == 'CGP':
-		print(bond.atom1.index,bond.atom2.index, 0.55, 5000)
+		#print(bond.atom1.index,bond.atom2.index, 0.55, 5000)
 		harmonic_bond_force.addBond(bond.atom1.index, bond.atom2.index, 0.55*unit.nanometer, 2*50*unit.kilocalorie_per_mole/unit.angstrom**2)
 		harmonic_bond_force.setUsesPeriodicBoundaryConditions(True)
 	else:
-		print(bond.atom1.index,bond.atom2.index, 0.575, 5000)
+		#print(bond.atom1.index,bond.atom2.index, 0.575, 5000)
 		harmonic_bond_force.addBond(bond.atom1.index, bond.atom2.index, 0.575*unit.nanometer, 2*50*unit.kilocalorie_per_mole/unit.angstrom**2)
 		harmonic_bond_force.setUsesPeriodicBoundaryConditions(True)
+
+harmonic_bond_force.setForceGroup(0)
 
 
 angle_expression = 'K * (cos(theta) - cos(theta0))^2'
@@ -158,16 +179,17 @@ for i,atom in enumerate(chain2.atoms()):
 			custom_angle_force.setUsesPeriodicBoundaryConditions(True)
 			#print('chain2',atom.index-2, atom.index, atom.index+2)
 
-
+custom_angle_force.setForceGroup(1)
 
 # section of stack interacting
 stack_expression = """step(rstack-r)*
 					(
 					delta*(5*(sigma/r)^12-6*(sigma/r)^10)
-					- delta*(5*(sigma/rstack)^12 - 6*(sigma/rstack)^10)
 					)
 					 """
+					###- delta*(5*(sigma/rstack)^12 - 6*(sigma/rstack)^10)
 stack_force = mm.CustomBondForce(stack_expression)
+#stack_force.addGlobalParameter('r_exclude',0.55*2**(1/6)*unit.nanometer)
 stack_force.addGlobalParameter('rstack',0.62*unit.nanometer)
 
 stack_force.addPerBondParameter("sigma")
@@ -250,19 +272,64 @@ for i,atom in enumerate(chain2.atoms()):
 			#print('CGC-CGG',atom.index, atom.index+2)
 
 
+stack_force.setUsesPeriodicBoundaryConditions(True)
+stack_force.setForceGroup(2)
+
+
+# section for excluded potential
+excluded_expression = 'step(rcut-r)*(4*epsilon*((sigma/r)^12 - (sigma/r)^6) + epsilon); rcut=2^(1/6)*sigma'
+excluded_force = mm.CustomBondForce(excluded_expression)
+
+excluded_force.addGlobalParameter('epsilon', 4*unit.kilocalorie_per_mole)
+excluded_force.addGlobalParameter('sigma', 0.55*unit.nanometer)
+
+# add interaction between abs(i-j)==4 within the same strand
+for i, atom in enumerate(chain1.atoms()):
+	if atom.name != 'CGP' and i+4 < len(list(chain1.atoms())):
+		excluded_force.addBond(atom.index, atom.index+4)
+		print('chain 1 + Exclude force', atom.index, atom.index+4)
+
+for i, atom in enumerate(chain2.atoms()):
+	if atom.name != 'CGP' and i+4 < len(list(chain2.atoms())):
+		excluded_force.addBond(atom.index, atom.index+4)
+		print('chain 2 + Exclude force', atom.index, atom.index+4)
+
+for atom1 in chain1.atoms():
+	for atom2 in chain2.atoms():
+		if atom1.name != 'CGP' and atom2.name != 'CGP':
+			if Counter([atom1.name, atom2.name]) != Counter(['CGA','CGT']) and Counter([atom1.name, atom2.name]) != Counter(['CGC','CGG']):
+				excluded_force.addBond(atom1.index,atom2.index)
+
+# add interaction out of 1-2 and 1-3 interactions within the same strand
+for i, atom1 in enumerate(chain1.atoms()):
+	for j, atom2 in enumerate(chain1.atoms()):
+		if i-j >4 and (atom1.name != 'CGP' and atom2.name != 'CGP'):
+			if Counter([atom1.name, atom2.name]) != Counter(['CGA','CGT']) and Counter([atom1.name, atom2.name]) != Counter(['CGC','CGG']):
+				excluded_force.addBond(atom1.index, atom2.index)
+				print('Test chain 1 +excluded force', atom1.index,atom1.name, atom2.index, atom2.name)
+
+for i, atom1 in enumerate(chain2.atoms()):
+	for j, atom2 in enumerate(chain2.atoms()):
+		if i-j >4 and (atom1.name != 'CGP' and atom2.name != 'CGP'):
+			if Counter([atom1.name, atom2.name]) != Counter(['CGA','CGT']) and Counter([atom1.name, atom2.name]) != Counter(['CGC','CGG']):
+				excluded_force.addBond(atom1.index, atom2.index)
+				print('Test chain 1 +excluded force', atom1.index, atom1.name, atom2.index, atom2.name)
+
+
+excluded_force.setUsesPeriodicBoundaryConditions(True)
+excluded_force.setForceGroup(4)
+
+
 # section for HB interaction
 
-hb_expression = """
-				step(rhb-r)*
-				(
-				delta*(5*(sigma/r)^12-6*(sigma/r)^10)
-				- delta*(5*(sigma/rhb)^12 - 6*(sigma/rhb)^10)
-				)
-				"""
+hb_expression = 'step(rhb-r)*(delta * (5*(sigma/r)^12 - 6*(sigma/r)^10))'
+
+				####- delta*(5*(sigma/rhb)^12 - 6*(sigma/rhb)^10)
 				#sigma=0.5*(sigma1+sigma2);
 				#delta=sqrt(delta1*delta2)
 hb_force = mm.CustomBondForce(hb_expression)
 #hb_force = mm.CustomNonbondedForce(hb_expression)
+#hb_force.addGlobalParameter('r_exclude',0.55*2**(1/6)*unit.nanometer)
 hb_force.addGlobalParameter('rhb',0.95*unit.nanometer)
 
 #hb_force.addPerParticleParameter('sigma')
@@ -270,102 +337,46 @@ hb_force.addGlobalParameter('rhb',0.95*unit.nanometer)
 hb_force.addPerBondParameter("sigma")
 hb_force.addPerBondParameter("delta")
 
-for atom1,atom2 in zip(chain1.atoms(), chain2.atoms()):
-	if atom1.name != 'CGP' and atom2.name != 'CGP' and Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
-		hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
-		#print('HB_potential',atom1.index, atom2.index)
-	if atom1.name != 'CGP' and atom2.name != 'CGP' and Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
-		hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
-		#print('HB_potential',atom1.index, atom2.index)
+#for bond in topology.bonds():
+#	hb_force.addExclusion(bond[0].index, bond[1].index)
+
+
+#for i, atom1 in enumerate(chain1.atoms):
+#	if i + 4 < len(list(chain1.atoms())):
+#		if Counter([atom1.name, list(chain1.atoms())[i+4].name]) == Counter(['CGA','CGT']):
+
+for atom1 in chain1.atoms():
+	for atom2 in chain2.atoms():
+		if Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
+			hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
+		if Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
+			hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
 
 for i, atom1 in enumerate(chain1.atoms()):
-    for j, atom2 in enumerate(chain1.atoms()):
-        if abs(i-j) > 4:  # exclude adjacent residue
-            if Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
-                hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
-            elif Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
-                hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
+	for j, atom2 in enumerate(chain1.atoms()):
+		if i-j >4 and Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
+			hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
+		elif i-j >4 and Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
+			hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
 
 for i, atom1 in enumerate(chain2.atoms()):
-    for j, atom2 in enumerate(chain2.atoms()):
-        if abs(i-j) > 4:  # exclude adjacent residue
-            if Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
-                hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
-            elif Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
-                hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
+	for j, atom2 in enumerate(chain2.atoms()):
+		if i-j >4 and Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
+			hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
+		elif i-j >4 and Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
+			hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
+			#print('HB_potential',atom1.index, atom1.name, atom2.index, atom2.name)
 
 
-##for i,atom1 in enumerate(topology.atoms()):
-##	for j,atom2 in enumerate(topology.atoms()):
-##		if abs(i-j) > 4 and Counter([atom1.name, atom2.name]) == Counter(['CGA','CGT']):
-##			hb_force.addBond(atom1.index, atom2.index, [0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
-##			print(atom1.index, atom2.index)
-##		if abs(i-j) > 4 and Counter([atom1.name, atom2.name]) == Counter(['CGC','CGG']):
-##			hb_force.addBond(atom1.index, atom2.index, [0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
-##			print(atom1.index, atom2.index)
-##for atom in topology.atoms():
-##	if atom.name in ('CGA','CGT'):
-##		hb_force.addParticle([0.60*unit.nanometer, 2.7*unit.kilocalorie_per_mole])
-##	elif atom.name in ('CGC','CGG'):
-##		hb_force.addParticle([0.55*unit.nanometer, 3.3*unit.kilocalorie_per_mole])
-##	else:
-##		hb_force.addParticle([0.0, 0.0])  # backbone not included
-##
-##groupA = []
-##for atom in chain1.atoms():
-##	if atom.name != 'CGP':
-##		groupA.append(atom.index)
-##
-##groupB = []
-##for atom in chain2.atoms():
-##	if atom.name != 'CGP':
-##		groupB.append(atom.index)
-##
-##hb_force.addInteractionGroup(groupA, groupB)
-
-
-###### 1-2 exclusion
-#####for bond in topology.bonds():
-#####	hb_force.addExclusion(bond[0].index, bond[1].index)
-#####
-#####for i,atom in enumerate(chain1.atoms()):
-#####	if atom.name != 'CGP':
-#####		if i+2 < len(list(chain1.atoms())) and i+4 > len(list(chain1.atoms())):
-#####			# |i-j| <=1
-#####			hb_force.addExclusion(atom.index, atom.index+2)
-#####		elif i+4 < len(list(chain1.atoms())):
-#####			# |i-j| <=2
-#####			hb_force.addExclusion(atom.index, atom.index+4)
-#####
-#####
-#####for i,atom in enumerate(chain2.atoms()):
-#####	if atom.name != 'CGP':
-#####		if i+2 < len(list(chain2.atoms())) and i+4 > len(list(chain2.atoms())):
-#####			# |i-j| <=1
-#####			hb_force.addExclusion(atom.index, atom.index+2)
-#####		elif i+4 < len(list(chain2.atoms())):
-#####			# |i-j| <=2
-#####			hb_force.addExclusion(atom.index, atom.index+4)
-#####
-######hb_force.setNonbondedMethod(mm.CustomNonbondedForce.CutoffPeriodic)
-######hb_force.setCutoffDistance(0.95*unit.nanometers)
+hb_force.setUsesPeriodicBoundaryConditions(True)
+hb_force.setForceGroup(3)
 
 			
-# section for excluded potential
-excluded_expression = 'step(rcut-r)*4*epsilon*((sigma/r)^12 - (sigma/r)^6) + epsilon; rcut=2^(1/6)*sigma'
-excluded_force = mm.CustomBondForce(excluded_expression)
-
-excluded_force.addGlobalParameter('epsilon', 4*unit.kilocalorie_per_mole)
-excluded_force.addGlobalParameter('sigma', 0.55*unit.nanometer)
-
-for i, atom in enumerate(chain1.atoms()):
-	if atom.name != 'CGP' and i+4 < len(list(chain1.atoms())):
-		excluded_force.addBond(atom.index, atom.index+4)
-
-for i, atom in enumerate(chain2.atoms()):
-	if atom.name != 'CGP' and i+4 < len(list(chain2.atoms())):
-		excluded_force.addBond(atom.index, atom.index+4)
-
 # section for electrostatic interaction
 NA=unit.AVOGADRO_CONSTANT_NA
 EC=1.602176634e-19*unit.coulomb
@@ -397,7 +408,9 @@ elec_force.createExclusionsFromBonds([(bond[0].index, bond[1].index) for bond in
 #hb_force.setCutoffDistance(3.5*unit.nanometers)
 
 elec_force.setNonbondedMethod(mm.CustomNonbondedForce.CutoffPeriodic)
-elec_force.setCutoffDistance(3.5*unit.nanometers)
+elec_force.setCutoffDistance(3.5*unit.nanometer)
+elec_force.setForceGroup(5)
+
 
 system.addForce(harmonic_bond_force)
 system.addForce(custom_angle_force)
@@ -408,23 +421,30 @@ system.addForce(elec_force)
 
 
 # run the simulation
-integrator = mm.LangevinMiddleIntegrator(300*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
+integrator = mm.LangevinMiddleIntegrator(275*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
 simulation = app.Simulation(topology, system, integrator)
 simulation.context.setPositions(positions)
 
 simulation.minimizeEnergy()
+
+simulation.context.setVelocitiesToTemperature(275*unit.kelvin)
 
 # setup simulation reporters
 # Write the trajectory to a file called 'traj.dcd'
 simulation.reporters.append(app.DCDReporter('traj.dcd', 1, enforcePeriodicBox=False))
 
 # Report information to the screen as the simulation runs
-simulation.reporters.append(app.StateDataReporter(stdout, 1, step=True,
+simulation.reporters.append(app.StateDataReporter(stdout, 1_000, step=True,
 		potentialEnergy=True, temperature=True, volume=True, speed=True))
 
+labels = {0:'bond',1:'angle',2:'stacking',3:'hb',4:'excluding',5:'elec'}
+
+simulation.reporters.append(EnergyDecompositionReporter('energy_components.dat',1,simulation.context,labels))
 
 # NVT equilibration
-simulation.step(50000)
+simulation.step(500_000)
+
+
 
 
 
