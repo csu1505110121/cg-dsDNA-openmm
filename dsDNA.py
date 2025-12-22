@@ -439,7 +439,7 @@ simulation.context.setVelocitiesToTemperature(300*unit.kelvin)
 
 # setup simulation reporters
 # Write the trajectory to a file called 'traj.dcd'
-simulation.reporters.append(app.DCDReporter('traj.dcd', 1, enforcePeriodicBox=False))
+simulation.reporters.append(app.DCDReporter('traj.dcd', 100_000, enforcePeriodicBox=False))
 
 # Report information to the screen as the simulation runs
 simulation.reporters.append(app.StateDataReporter(stdout, 1_000, step=True,
@@ -447,10 +447,10 @@ simulation.reporters.append(app.StateDataReporter(stdout, 1_000, step=True,
 
 labels = {0:'bond',1:'angle',2:'stacking',3:'hb',4:'excluding',5:'elec'}
 
-simulation.reporters.append(EnergyDecompositionReporter('energy_components.dat',reportInterval=1_000,labels=labels))
+simulation.reporters.append(EnergyDecompositionReporter('energy_components.dat',reportInterval=100_000,labels=labels))
 
 # NVT equilibration
-simulation.step(100_000)
+simulation.step(100_000_000)
 
 
 
