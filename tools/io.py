@@ -6,6 +6,7 @@ import pandas as pd
 import openmm.unit as unit
 from Bio.PDB.MMCIFParser import MMCIFParser
 from Bio.PDB.PDBParser import PDBParser
+import re
 
 
 def dumpPDB(dataframe, filename, conn=True):
@@ -52,15 +53,16 @@ def com(atoms):
 	ms = 0
 	for atom in atoms:
 		xyz = atom.get_coord()
-		m   = MASS[atom.get_name()[0]]
+		m   = MASS[atom.get_name()[0]] # should be replaced with re match
 		com += m*xyz
 		ms +=m
 	return com/ms
 
 
-def AA2CG(fn, Mtype='protein', visual=False):
+def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 	"""
-		convert all atom structure into coarse-grained ones
+		convert all atom structure into coarse-grained one
+		current only accept two file format: PDB and CIF
 		
 	"""
 	if fn.rsplit('.')[-1] in ['cif', 'CIF']:
@@ -73,16 +75,16 @@ def AA2CG(fn, Mtype='protein', visual=False):
 		atoms = [a for a in structure.get_atoms() if a.get_name() == 'CA']
 	elif Mtype == 'DNA':
 		atoms = [a for a in structure.get_atoms() if a.get_name() in (
-																		# sugar atoms
-																		"C1'","C2'","C3'","C4'","O4'",
-																		# ADE base
-																		"N1","C2","N3","C4","C5","C6","N6","N7","C8","N9",
-																		# THY base
-																		 "N1","C2","O2","N3","C4","O4","C5","C6","C7",
-																		# GUA base
-																		 "N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9",
-																		# CYT base
-																		 "N1","C2","O2","N3","C4","N4","C5","C6",
+									# sugar atoms
+									"C1'","C2'","C3'","C4'","O4'",
+									# ADE base
+									"N1","C2","N3","C4","C5","C6","N6","N7","C8","N9",
+									# THY base
+									 "N1","C2","O2","N3","C4","O4","C5","C6","C7",
+									# GUA base
+									 "N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9",
+									# CYT base
+									 "N1","C2","O2","N3","C4","N4","C5","C6",
 																	 )]
 
 	# get the connectivity
@@ -159,15 +161,19 @@ def AA2CG(fn, Mtype='protein', visual=False):
 			#print(chain.id, res.get_resname(), res.get_id()[1], atom.get_name(),atom.get_coord())
 
 		if visual:
-			dumpPDB(data,'tmp.pdb')
+			dumpPDB(data,vis_fn)
 
 		return data
+
+
+	# section for handling DNA structure
 	elif Mtype == 'DNA':
 		chainID = None
 		atomID  = 0
 		chains = []
 		residues = []
 
+		# all atom name for PO4, ADE, THY, CYT, GUA
 		PO4 = ["C1'","C2'","C3'","C4'","O4'"]
 		ADE = ["N1","C2","N3","C4","C5","C6","N6","N7","C8","N9"]
 		THY = ["N1","C2","O2","N3","C4","O4","C5","C6","C7"]
@@ -192,7 +198,7 @@ def AA2CG(fn, Mtype='protein', visual=False):
 					chn = res.get_parent()
 					if res.get_id()[1] == residue and chn.id == chain:
 						atom_res.append(a)
-				resname = res.get_resname().strip()
+						resname = res.get_resname().strip()
 
 				# section of PO4
 				info['chain'].append(chain)
@@ -224,6 +230,7 @@ def AA2CG(fn, Mtype='protein', visual=False):
 					info['ATYPE'].append(resname)
 					info['name'].append('GUA')
 					atom_base = [a for a in atom_res if a.get_name() in GUA]
+					#print(atom_base)
 				com_base = com(atom_base)
 				info['xyz'].append(com_base)
 				info['bondlist'].append([])
@@ -231,8 +238,30 @@ def AA2CG(fn, Mtype='protein', visual=False):
 
 		data = pd.DataFrame(data=info)
 
+		for idx,row in data.iterrows():
+			
+			pre2 = data.iloc[idx-2] if idx-2 >= 0 else None
+			pre1 = data.iloc[idx-1] if idx-1 >= 0 else None
+			nxt1 = data.iloc[idx+1] if idx+1 < len(data) else None
+			nxt2 = data.iloc[idx+2] if idx+2 < len(data) else None
+
+			if row['name'] == 'PO4':
+				if pre2 is None and nxt2 is not None:
+					row['bondlist'] = [idx+1,idx+2]
+
+				elif pre2 is not None and nxt2 is not None:
+					if row['chain'] == nxt2['chain']:
+						row['bondlist'] = [idx+1, idx+2]
+						row['anglelist'] = [idx+1, idx+2]
+					else:
+						row['bondlist'] = [idx+1]
+
+				elif pre2 is not None and nxt2 is None:
+					row['bondlist'] = [idx+1]
+
+
 		if visual:
-			dumpPDB(data,'tmp.pdb',False)
+			dumpPDB(data,vis_fn)
 
 		return data
 	elif Mtype == 'organic':
@@ -244,5 +273,5 @@ if __name__ == '__main__':
 	# protein test
 	#data = AA2CG('../test/tdp_43.cif',visual=True)
 	# DNA test
-	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=True)
-	print(data)
+	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=False, vis_fn='tmp.pdb')
+	#print(data)
