@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 import openmm.unit as unit
 from Bio.PDB.MMCIFParser import MMCIFParser
+from Bio.PDB.PDBParser import PDBParser
 
 
-def dumpPDB(dataframe, filename):
+def dumpPDB(dataframe, filename, conn=True):
 	"""
 		dump coarse-grained structures for visualisation	
 	"""
@@ -20,13 +21,41 @@ def dumpPDB(dataframe, filename):
 				1.0,0.0))
 	
 		# section for connectivity
-		for idx, row in dataframe.iterrows():
-			if len(row['bondlist']):
-				f.write('{:6s}'.format('CONECT'))
-				f.write('{:5d}'.format(idx+1))
-				for x in row['bondlist']:
-					f.write('{:5d}'.format(x+1))
-				f.write('\n')
+		if conn:
+			for idx, row in dataframe.iterrows():
+				if len(row['bondlist']):
+					f.write('{:6s}'.format('CONECT'))
+					f.write('{:5d}'.format(idx+1))
+					for x in row['bondlist']:
+						f.write('{:5d}'.format(x+1))
+					f.write('\n')
+
+def com(atoms):
+	"""
+		estimate com
+	"""
+	MASS = {
+    "H": 1.008,
+    "C": 12.011,
+    "N": 14.007,
+    "O": 15.999,
+    "P": 30.974,
+    "S": 32.06,
+    "MG": 24.305,
+    "NA": 22.990,
+    "K": 39.098,
+    "CA": 40.078,
+    "CL": 35.45,
+	}
+
+	com = 0
+	ms = 0
+	for atom in atoms:
+		xyz = atom.get_coord()
+		m   = MASS[atom.get_name()[0]]
+		com += m*xyz
+		ms +=m
+	return com/ms
 
 
 def AA2CG(fn, Mtype='protein', visual=False):
@@ -34,15 +63,34 @@ def AA2CG(fn, Mtype='protein', visual=False):
 		convert all atom structure into coarse-grained ones
 		
 	"""
-	parser = MMCIFParser()
+	if fn.rsplit('.')[-1] in ['cif', 'CIF']:
+		parser = MMCIFParser()
+	elif fn.rsplit('.')[-1] in ['pdb', 'PDB']:
+		parser = PDBParser()
 	structure = parser.get_structure('test', fn)
-	atoms = [a for a in structure.get_atoms() if a.get_name() == 'CA']
+
+	if Mtype == 'protein':
+		atoms = [a for a in structure.get_atoms() if a.get_name() == 'CA']
+	elif Mtype == 'DNA':
+		atoms = [a for a in structure.get_atoms() if a.get_name() in (
+																		# sugar atoms
+																		"C1'","C2'","C3'","C4'","O4'",
+																		# ADE base
+																		"N1","C2","N3","C4","C5","C6","N6","N7","C8","N9",
+																		# THY base
+																		 "N1","C2","O2","N3","C4","O4","C5","C6","C7",
+																		# GUA base
+																		 "N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9",
+																		# CYT base
+																		 "N1","C2","O2","N3","C4","N4","C5","C6",
+																	 )]
+
 	# get the connectivity
 	# 
 	info = {'chain':[], 
 				'name':[],   # element name
 				'ATYPE':[],  # residue name
-				'xyz':[],    # coordinates
+				'xyz':[],	# coordinates
 				'bondlist':[], # bond formed with current bead
 				'anglelist':[] # angle formed with placing current bead in the middle
 			}
@@ -107,20 +155,94 @@ def AA2CG(fn, Mtype='protein', visual=False):
 
 			atomID +=1
 
-			data = pd.DataFrame(data=info)
+		data = pd.DataFrame(data=info)
 			#print(chain.id, res.get_resname(), res.get_id()[1], atom.get_name(),atom.get_coord())
 
-			if visual:
-				dumpPDB(data,'tmp.pdb')
+		if visual:
+			dumpPDB(data,'tmp.pdb')
 
 		return data
 	elif Mtype == 'DNA':
-		pass
+		chainID = None
+		atomID  = 0
+		chains = []
+		residues = []
+
+		PO4 = ["C1'","C2'","C3'","C4'","O4'"]
+		ADE = ["N1","C2","N3","C4","C5","C6","N6","N7","C8","N9"]
+		THY = ["N1","C2","O2","N3","C4","O4","C5","C6","C7"]
+		CYT = ["N1","C2","O2","N3","C4","N4","C5","C6"]
+		GUA = ["N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9"]
+
+		# get the total chain ID and residue number
+		for i, atom in enumerate(atoms):
+			res = atom.get_parent()
+			chain = res.get_parent()
+			chains.append(chain.id)
+			residues.append(res.get_id()[1])
+		chains = set(chains)
+		residues = set(residues)
+		#print(chains, residues)
+
+		for chain in chains:
+			for residue in residues:
+				atom_res = []
+				for a in atoms:
+					res = a.get_parent()
+					chn = res.get_parent()
+					if res.get_id()[1] == residue and chn.id == chain:
+						atom_res.append(a)
+				resname = res.get_resname().strip()
+
+				# section of PO4
+				info['chain'].append(chain)
+				info['name'].append('PO4')
+				info['ATYPE'].append(resname)
+				atoms_po4 = [a for a in atom_res if a.get_name() in PO4]
+				com_po4 = com(atoms_po4)
+				info['xyz'].append(com_po4)
+				info['bondlist'].append([])
+				info['anglelist'].append([])
+				# section of BASE
+				if resname in ['ADE','A']:
+					info['chain'].append(chain)
+					info['ATYPE'].append(resname)
+					info['name'].append('ADE')
+					atom_base = [a for a in atom_res if a.get_name() in ADE]
+				elif resname in ['THY','T']:
+					info['chain'].append(chain)
+					info['ATYPE'].append(resname)
+					info['name'].append('THY')
+					atom_base = [a for a in atom_res if a.get_name() in THY]
+				elif resname in ['CYT','C']:
+					info['chain'].append(chain)
+					info['ATYPE'].append(resname)
+					info['name'].append('CYT')
+					atom_base = [a for a in atom_res if a.get_name() in CYT]
+				elif resname in ['GUA','G']:
+					info['chain'].append(chain)
+					info['ATYPE'].append(resname)
+					info['name'].append('GUA')
+					atom_base = [a for a in atom_res if a.get_name() in GUA]
+				com_base = com(atom_base)
+				info['xyz'].append(com_base)
+				info['bondlist'].append([])
+				info['anglelist'].append([])
+
+		data = pd.DataFrame(data=info)
+
+		if visual:
+			dumpPDB(data,'tmp.pdb',False)
+
+		return data
 	elif Mtype == 'organic':
 		pass
 
 
 
 if __name__ == '__main__':
-	data = AA2CG('../test/tdp_43.cif')
-	#print(data)
+	# protein test
+	#data = AA2CG('../test/tdp_43.cif',visual=True)
+	# DNA test
+	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=True)
+	print(data)
