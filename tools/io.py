@@ -203,7 +203,15 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 				# section of PO4
 				info['chain'].append(chain)
 				info['name'].append('PO4')
-				info['ATYPE'].append(resname)
+				if resname in ['ADE','A']:
+					info['ATYPE'].append('ADE')
+				elif resname in ['THY','T']:
+					info['ATYPE'].append('THY')
+				elif resname in ['CYT','C']:
+					info['ATYPE'].append('CYT')
+				elif resname in ['GUA','G']:
+					info['ATYPE'].append('GUA')
+					
 				atoms_po4 = [a for a in atom_res if a.get_name() in PO4]
 				com_po4 = com(atoms_po4)
 				info['xyz'].append(com_po4)
@@ -212,22 +220,22 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 				# section of BASE
 				if resname in ['ADE','A']:
 					info['chain'].append(chain)
-					info['ATYPE'].append(resname)
+					info['ATYPE'].append('ADE')
 					info['name'].append('ADE')
 					atom_base = [a for a in atom_res if a.get_name() in ADE]
 				elif resname in ['THY','T']:
 					info['chain'].append(chain)
-					info['ATYPE'].append(resname)
+					info['ATYPE'].append('THY')
 					info['name'].append('THY')
 					atom_base = [a for a in atom_res if a.get_name() in THY]
 				elif resname in ['CYT','C']:
 					info['chain'].append(chain)
-					info['ATYPE'].append(resname)
+					info['ATYPE'].append('CYT')
 					info['name'].append('CYT')
 					atom_base = [a for a in atom_res if a.get_name() in CYT]
 				elif resname in ['GUA','G']:
 					info['chain'].append(chain)
-					info['ATYPE'].append(resname)
+					info['ATYPE'].append('GUA')
 					info['name'].append('GUA')
 					atom_base = [a for a in atom_res if a.get_name() in GUA]
 					#print(atom_base)
@@ -267,11 +275,38 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 	elif Mtype == 'organic':
 		pass
 
+def STRSUMMARY(data,Mtype='DNA'):
+	chains = []
+	atomtypes = []
+	
+	for i, row in data.iterrows():
+		chain_tmp = row['chain']
+		if chain_tmp not in chains:
+			chains.append(chain_tmp)
+		if Mtype=='DNA':
+			name_tmp = row['name']
+			if name_tmp not in atomtypes:
+				atomtypes.append(name_tmp)
+		elif Mtype=='protein':
+			name_tmp = row['ATYPE']
+			if name_tmp not in atomtypes:
+				atomtypes.append(name_tmp)
+		
+	return chains, atomtypes
+
+def readConfig(filename):
+	pass
+
 
 
 if __name__ == '__main__':
 	# protein test
-	#data = AA2CG('../test/tdp_43.cif',visual=True)
+	data = AA2CG('../test/tdp_43.cif',visual=True)
+	print(data)
 	# DNA test
-	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=False, vis_fn='tmp.pdb')
-	#print(data)
+	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
+	print(data)
+	chains, atomtypes = STRSUMMARY(data)
+	print('chains No. {}, atomtypes No. {}'.format(len(chains), len(atomtypes)))
+	#for i,row in data.iterrows():
+	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
