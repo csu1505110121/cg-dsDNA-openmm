@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 import sys, os
+from collections import Counter
 from pathlib import Path
 
 current_file = Path(__file__).resolve()
@@ -91,7 +92,101 @@ def generateDATA(data, Mtype='DNA', fn_data='in.data', fn_lammps='lammps.in'):
 				f.write('{:6d}\t{:6d}\t{:6d}\t{:6d}\t{:6d}\n'.format(angle_idx+1, 1, anglelist[0]+1, i+1, anglelist[1]+1))
 				angle_idx +=1
 
+	with open(fn_lammps,'w') as f:
+		f.write('# 2-bead CG-DNA simulation at T = 300 K and 100 mM salt SOME ARGUMENTS NEED TO BE REVISED ACCORDINGLY\n')
+		f.write('\n')
+		f.write('###### VARIABLES #######\n')
+		f.write('variable    T equal {}\n'.format(307))
+		f.write('variable    damp equal 1000\n')
+		f.write('variable    seedV equal 4928421\n')
+		f.write('variable    seedT equal 3278431\n')
+		f.write('variable    dt equal 10.0\n')
+		f.write('variable    thermointrv equal 100000\n')
+		f.write('variable    dumpintrv equal 100000\n')
+		f.write('variable    runtime equal 10000000\n')
+		f.write('\n')
+		f.write('###### BOX ############\n')
+		f.write('units       real\n')
+		f.write('dimension   3\n')
+		f.write('boundary    p p p\n')
+		f.write('atom_style  full\n')
+		f.write('read_data   {:20s}\n'.format('in.data'))
+		f.write('\n')
+		f.write('###### pair styles ##########\n')
+		f.write('bond_style  harmonic\n')
+		f.write('angle_style cosine/squared\n')
+		f.write('\n')
+		f.write('pair_style  hybrid lj1210dna/2bead 9.5 ljlambda 0.1 0 35.0\n')
+		f.write('dielectric  80.0\n')
+		f.write('\n')
+		f.write('# pairwise coefficients\n')
+		f.write('\n')
+		f.write('bond_coeff          1   50.000000    5.750000\n')
+		f.write('bond_coeff          2   50.000000    5.500000\n')
+		f.write('angle_coeff         1   40.000000  180.000000\n')
+		for k,v in ATM_DICT.items():
+			if k == 'PO4':
+				r_elec_cut = 35.0
+			else:
+				r_elec_cut = 0.0
+			f.write('pair_coeff \t {:5d}\t{:5d} ljlambda 4.00000 5.500 0.000000 6.174 {:5.3f}\n'.format(
+								ATM_DICT['PO4'], v, r_elec_cut
+			))
+		for k1,v1 in ATM_DICT.items():
+			for k2,v2 in ATM_DICT.items():
+				if k1 != 'PO4' and k2 != 'PO4' and v1 <= v2:
+					#print(v1,v2)
+					if k1 == 'GUA' and k2 == 'GUA':
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead 11.000000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['GUA', 'CYT']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  8.300000   3.600    3.300000   5.500    4.000000   5.500   0   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['GUA', 'THY']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  9.200000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['GUA', 'ADE']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead 10.300000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif k1 == 'CYT' and k2 == 'CYT':
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  6.200000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['CYT', 'THY']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  6.900000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['CYT', 'ADE']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  7.800000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif k1 == 'THY' and k2 == 'THY':
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  7.700000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
+					elif Counter([k1,k2]) == Counter(['THY', 'ADE']):
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  8.600000   3.600    2.700000   6.000    4.000000   5.500   0   6.200   9.500\n'.format(v1, v2))
+					elif k1 == 'ADE' and k2 == 'ADE':
+						f.write('pair_coeff \t {:5d} {:5d} lj1210dna/2bead  9.700000   3.600    0.000000   0.000    4.000000   5.500   1   6.200   9.500\n'.format(v1, v2))
 
+		f.write('special_bonds lj/coul 0.0 1.0 1.0\n')
+		f.write('neighbor    2.0 multi\n')
+		f.write('\n')
+		f.write('### Energy minimization\n')
+		f.write('minimize    1.0e-4 1.0e-6 1000 100000\n')
+		f.write('\n')
+		f.write('### production ###\n')
+		f.write('\n')
+		f.write('#### Time step\n')
+		f.write('reset_timestep  0\n')
+		f.write('timestep        ${dt} #fs\n')
+		f.write('### Ensemble / Thermostat\n')
+		f.write('run_style       verlet\n')
+		f.write('velocity        all create $T ${seedV}\n')
+		f.write('fix             fix1 all nve\n')
+		f.write('fix             fix2 all langevin $T $T ${damp} ${seedT}\n')
+		f.write('### Outputting useful information in the log file\n')
+		f.write('thermo          ${thermointrv}\n')
+		f.write('thermo_style    custom step temp pe ke evdwl ecoul ebond eangle\n')
+		f.write('# Saving the simulation snapshots in a trajectory file\n')
+		f.write('dump            mydump1 all custom ${dumpintrv} dna.dumplammps.* id type x y z ix iy iz\n')
+		f.write('dump_modify     mydump1 sort id\n')
+		f.write('# Specifying the runlength\n')
+		f.write('run             ${runtime}\n')
+		f.write('\n')
+		f.write('# Writing restart files\n')
+		f.write('write_restart   restart.bin.*\n')
+		f.write('write_data      an.* nocoeff\n')
+
+		
 
 if __name__ == '__main__':
 	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=False, vis_fn='tmp.pdb')
