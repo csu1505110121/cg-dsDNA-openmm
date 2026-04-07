@@ -28,27 +28,34 @@ def build_system(data, Mtype='DNA'):
 
 	# section of topology
 	topology = app.Topology()
-	chains, atomtype = STRSUMMARY(data, Mtype)
+	info = STRSUMMARY(data, Mtype)
 	
-	for chain in chains:
+	atoms = []
+
+	for chain in info['chains']:
 		chain_tmp = topology.addChain()
 		for i_x, row_x in data.iterrows():
-			if len(row_x['bondlist']):
-				for nxt in row_x['bondlist']:
-					topology.addBond(i_x, nxt)
+		#	if len(row_x['bondlist']):
+		#		for nxt in row_x['bondlist']:
+		#			topology.addBond(i_x, nxt)
 			if row_x['chain'] == chain:
 				if Mtype == 'DNA':
 					if i_x % 2 == 0:
 						residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
 						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+						atoms.append(atom_tmp)
 					else:
 						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+						atoms.append(atom_tmp)
 				elif Mtype == 'protein':
 					residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
 					atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+					atoms.append(atom_tmp)
 
-
-
+	for i, row in data.iterrows():
+		if len(row['bondlist']):
+			for nxt in row['bondlist']:
+				topology.addBond(atoms[i], atoms[nxt])
 
 	# section of system
 	system = mm.System()
