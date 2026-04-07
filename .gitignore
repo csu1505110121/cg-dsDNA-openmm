@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+
+__pychche__
+
+# directory
+bak/
+validation/
+
