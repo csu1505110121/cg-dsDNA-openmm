@@ -110,7 +110,7 @@ def generateDATA(data, Mtype='DNA', fn_data='in.data', fn_lammps='lammps.in'):
 		f.write('dimension   3\n')
 		f.write('boundary    p p p\n')
 		f.write('atom_style  full\n')
-		f.write('read_data   {:20s}\n'.format('in.data'))
+		f.write('read_data   {:20s}\n'.format(fn_data))
 		f.write('\n')
 		f.write('###### pair styles ##########\n')
 		f.write('bond_style  harmonic\n')
@@ -186,7 +186,76 @@ def generateDATA(data, Mtype='DNA', fn_data='in.data', fn_lammps='lammps.in'):
 		f.write('write_restart   restart.bin.*\n')
 		f.write('write_data      an.* nocoeff\n')
 
-		
+def readDUMPFILE(fn):
+	"""
+		only compatiable when dumping x y z ix iy iz
+	"""
+	positions = []
+	with open(fn,'r')  as f:
+		while True:
+			line = f.readline()
+			if not line:
+				break
+			else:
+				if len(line.split()) == 8:
+					xyz = [float(coor) for coor in line.split()[2:5]]
+					positions.append(xyz)
+
+	return np.array(positions)
+
+	
+def datarebuild(f_ini_data:str, f_dump_data:str, f_out_data:str):
+	"""
+		convert the interval trajectories file into data file for single point estimation
+	"""
+	xyzs = readDUMPFILE(f_dump_data)
+	output = open(f_out_data, 'w')
+	with open(f_ini_data, 'r') as f:
+		while True:
+			line = f.readline()
+			if not line:
+				break
+			else:
+				if len(line.split())==7:
+					index = int(line.split()[0])
+					chain = int(line.split()[1])
+					atype = int(line.split()[2])
+					q     = float(line.split()[3])
+					xyz   = xyzs[index-1,:]	
+					print('{:3d} {:3d} {:3d} {:.3f} {:.3f} {:.3f} {:.3f}'.format(index, chain, atype, q,xyz[0], xyz[1],xyz[2]),file=output)
+				else:
+					print(line.strip('\n'),file=output)
+
+	
+def generate_lammps4sp(f_ini_data:str, f_dump_data:str, f_out_data:str, f_lammps_template:str, f_lammps_in:str):
+	"""
+		generate lammps input file for Single Point Estimation
+	"""
+	# generate the file similar to in.data for LAMMPS
+	datarebuild(f_ini_data, f_dump_data, f_out_data)
+	# generate the file similar to lammps.in for LAMMPS
+	# only utilised for single point estimation without dumpping interval 
+	# coordinates and minimization
+	output = open(f_lammps_in, 'w')
+	with open(f_lammps_template, 'r') as f:
+		while True:
+			line = f.readline()
+			if not line:
+				break
+			else:
+				if 'variable' in line and 'runtime' in line:
+					print('variable runtime equal 0', file=output)
+				elif 'mini' in line:
+					pass
+				elif len(line.strip()) and (line.split()[0] == 'dump' or line.split()[0] == 'dump_modify'):
+					pass
+				elif 'read_data' in line:
+					print('read_data {}'.format(f_out_data), file=output)
+				else:
+					print(line.strip('\n'),file=output)
+				
+					
+	
 
 if __name__ == '__main__':
 	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=False, vis_fn='tmp.pdb')
