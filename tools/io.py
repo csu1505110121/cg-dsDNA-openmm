@@ -260,7 +260,7 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 				elif pre2 is not None and nxt2 is not None:
 					if row['chain'] == nxt2['chain']:
 						row['bondlist'] = [idx+1, idx+2]
-						row['anglelist'] = [idx+1, idx+2]
+						row['anglelist'] = [idx-2, idx+2]
 					else:
 						row['bondlist'] = [idx+1]
 
@@ -276,26 +276,32 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 		pass
 
 def STRSUMMARY(data,Mtype='DNA'):
-	chains = []
-	atomtypes = []
+	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[]}
+	#chains = []
+	#atomtypes = []
 	
 	for i, row in data.iterrows():
+		info['atoms'].append(i)
 		chain_tmp = row['chain']
-		if chain_tmp not in chains:
-			chains.append(chain_tmp)
+		if chain_tmp not in info['chains']:
+			info['chains'].append(chain_tmp)
+		bonds = row['bondlist']
+		angles = row['anglelist']
+		if len(bonds):
+			for bond in bonds:
+				info['bonds'].append([i,bond])
+		if len(angles):
+			info['angles'].append([angles[0], i, angles[1]])
 		if Mtype=='DNA':
 			name_tmp = row['name']
-			if name_tmp not in atomtypes:
-				atomtypes.append(name_tmp)
+			if name_tmp not in info['atomtypes']:
+				info['atomtypes'].append(name_tmp)
 		elif Mtype=='protein':
 			name_tmp = row['ATYPE']
 			if name_tmp not in atomtypes:
 				atomtypes.append(name_tmp)
 		
-	return chains, atomtypes
-
-def readConfig(filename):
-	pass
+	return info
 
 
 
