@@ -1,0 +1,9 @@
+# label for different energy contributions
+
+- 1: Bond
+- 2: Angle
+- 3: Stack
+- 4: Hydrogen Bonding
+- 5: Excluding
+- 6: vdW
+- 7: Elec
