@@ -258,9 +258,11 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 					row['bondlist'] = [idx+1,idx+2]
 
 				elif pre2 is not None and nxt2 is not None:
-					if row['chain'] == nxt2['chain']:
+					if row['chain'] == nxt2['chain'] and row['chain'] == pre2['chain']:
 						row['bondlist'] = [idx+1, idx+2]
 						row['anglelist'] = [idx-2, idx+2]
+					elif row['chain'] == nxt2['chain'] and row['chain'] != pre2['chain']:
+						row['bondlist'] = [idx+1,idx+2]
 					else:
 						row['bondlist'] = [idx+1]
 
@@ -310,9 +312,9 @@ if __name__ == '__main__':
 	data = AA2CG('../test/tdp_43.cif',visual=True)
 	print(data)
 	# DNA test
-	data = AA2CG('../test/dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
+	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
 	print(data)
-	chains, atomtypes = STRSUMMARY(data)
-	print('chains No. {}, atomtypes No. {}'.format(len(chains), len(atomtypes)))
+	info = STRSUMMARY(data)
+	print('chains No. {}, atomtypes No. {}'.format(len(info['chains']), len(info['atomtypes'])))
 	#for i,row in data.iterrows():
 	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
