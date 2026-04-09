@@ -7,7 +7,9 @@ import openmm.unit as unit
 from Bio.PDB.MMCIFParser import MMCIFParser
 from Bio.PDB.PDBParser import PDBParser
 import re
-
+import sys, os
+import warnings
+warnings.filterwarnings("ignore")
 
 def dumpPDB(dataframe, filename, conn=True):
 	"""
@@ -105,7 +107,10 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 			# if chain ID changed, the connectivity was broken and should count as new structure
 			info['chain'].append(chain.id )
 			info['name'].append(atom.get_name() )
-			info['ATYPE'].append(res.get_resname() )
+			if res.get_resname() in ['HIS','HIE','HID']: # just convert HIE and HID to HIS
+				info['ATYPE'].append('HIS')
+			else:
+				info['ATYPE'].append(res.get_resname())
 			info['xyz'].append(atom.get_coord() )
 			
 			nxt = atoms[i+1] if i+1 < len(atoms) else None
@@ -277,7 +282,11 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 	elif Mtype == 'organic':
 		pass
 
-def STRSUMMARY(data,Mtype='DNA'):
+def STRSUMMARY(data,Mtype='DNA') -> dict:
+	"""
+		summarise the system's information
+		return a dictionary
+	"""
 	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[]}
 	#chains = []
 	#atomtypes = []
@@ -306,11 +315,77 @@ def STRSUMMARY(data,Mtype='DNA'):
 	return info
 
 
+def _update_dataframe(columns, value):
+	if isinstance(columns, list) and len(columns) >0:
+		return [i + value for i in columns]
+	return columns
+
+
+def _splitPDB(fn_assemble,info_conf, vis=False):
+	"""
+		split the assembled pdb into pdbs and assign different chains 
+		and Mtype:
+			- protein
+			- DNA
+	"""
+
+	total_data = {'chain':[], 'name':[], 'ATYPE':[], 'xyz':[], 'bondlist':[], 'anglelist':[]}
+	total_data = pd.DataFrame(data=total_data)
+	#print(len(total_data))
+
+	Mtypes = ['protein']*info_conf['protein'] + ['DNA']*info_conf['DNA']
+	#print(Mtypes)
+
+	chains_num = info_conf['protein'] * 1 + info_conf['DNA'] * 2
+	chains_id = [str(i) for i in range(1, chains_num+1)]
+	
+	mol_id = 0
+	chain_id = 0
+	with open(fn_assemble,'r') as f:
+		records = []
+		while True:
+			line = f.readline()
+			if not line:
+				break
+			elif 'ATOM' in line or 'HEATM' in line:
+				records.append(line)
+			elif 'TER' in line:
+				with open('_tmp.pdb','w') as tmp:
+					for record in records:
+						tmp.write(record)
+				records = []
+				Mtype = Mtypes[mol_id] # select accroding molecule type
+				_data = AA2CG('_tmp.pdb',Mtype, visual=False) 
+
+				_data['bondlist'] = _data['bondlist'].apply(_update_dataframe, value=len(total_data))
+				_data['anglelist'] = _data['anglelist'].apply(_update_dataframe, value=len(total_data))
+				if Mtype == 'protein':
+					_data['chain'] = chains_id[chain_id]
+				elif Mtype == 'DNA':
+					unique_chains = sorted(_data['chain'].unique())
+					_left_chain = chains_id[chain_id]
+					chain_id +=1
+					_right_chain = chains_id[chain_id]
+					chain_map = {unique_chains[0]:_left_chain, unique_chain[1]:_right_chain}
+					_data['chain'] = _data['chain'].map(chain_map)
+
+				mol_id +=1
+				chain_id +=1
+				total_data = pd.concat([total_data, _data], ignore_index=True)
+				# removing the temp file, such as _tmp.pdb
+				if os.path.exists('_tmp.pdb'):
+					os.remove('_tmp.pdb')
+	if vis:
+		total_data['chain']	= 'A'
+		dumpPDB(total_data, filename='total_mix.pdb')					
+
+	return total_data
+			
 
 if __name__ == '__main__':
 	# protein test
-	data = AA2CG('../test/tdp_43.cif',visual=False)
-	print(data)
+###	data = AA2CG('../test/tdp_43.cif',visual=False)
+###	print(data)
 ###	# DNA test
 ###	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
 ###	print(data)
@@ -318,3 +393,11 @@ if __name__ == '__main__':
 ###	print('chains No. {}, atomtypes No. {}'.format(len(info['chains']), len(info['atomtypes'])))
 ###	#for i,row in data.iterrows():
 ###	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
+
+	info_conf={'protein':5,
+				'DNA': 0,
+				}
+	fn_assemble = '../test/mix_prot/mixture.pdb'
+	total_data = _splitPDB(fn_assemble,info_conf)
+	dumpPDB(total_data, filename='total_mix.pdb')
+	print(total_data)
