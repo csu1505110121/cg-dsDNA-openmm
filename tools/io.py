@@ -300,7 +300,7 @@ def STRSUMMARY(data,Mtype='DNA'):
 				info['atomtypes'].append(name_tmp)
 		elif Mtype=='protein':
 			name_tmp = row['ATYPE']
-			if name_tmp not in atomtypes:
+			if name_tmp not in info['atomtypes']:
 				info['atomtypes'].append(name_tmp)
 		
 	return info
