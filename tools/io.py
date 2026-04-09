@@ -376,8 +376,9 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 				if os.path.exists('_tmp.pdb'):
 					os.remove('_tmp.pdb')
 	if vis:
-		total_data['chain']	= 'A'
-		dumpPDB(total_data, filename='total_mix.pdb')					
+		total_data_new = total_data.copy()
+		total_data_new['chain']	= 'A'
+		dumpPDB(total_data_new, filename='total_mix.pdb')					
 
 	return total_data
 			
