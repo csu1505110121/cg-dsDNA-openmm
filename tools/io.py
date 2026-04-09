@@ -301,7 +301,7 @@ def STRSUMMARY(data,Mtype='DNA'):
 		elif Mtype=='protein':
 			name_tmp = row['ATYPE']
 			if name_tmp not in atomtypes:
-				atomtypes.append(name_tmp)
+				info['atomtypes'].append(name_tmp)
 		
 	return info
 
@@ -309,12 +309,12 @@ def STRSUMMARY(data,Mtype='DNA'):
 
 if __name__ == '__main__':
 	# protein test
-	data = AA2CG('../test/tdp_43.cif',visual=True)
+	data = AA2CG('../test/tdp_43.cif',visual=False)
 	print(data)
-	# DNA test
-	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
-	print(data)
-	info = STRSUMMARY(data)
-	print('chains No. {}, atomtypes No. {}'.format(len(info['chains']), len(info['atomtypes'])))
-	#for i,row in data.iterrows():
-	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
+###	# DNA test
+###	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
+###	print(data)
+###	info = STRSUMMARY(data)
+###	print('chains No. {}, atomtypes No. {}'.format(len(info['chains']), len(info['atomtypes'])))
+###	#for i,row in data.iterrows():
+###	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
