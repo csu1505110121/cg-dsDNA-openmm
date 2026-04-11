@@ -38,17 +38,17 @@ def com(atoms):
 		estimate com
 	"""
 	MASS = {
-    "H": 1.008,
-    "C": 12.011,
-    "N": 14.007,
-    "O": 15.999,
-    "P": 30.974,
-    "S": 32.06,
-    "MG": 24.305,
-    "NA": 22.990,
-    "K": 39.098,
-    "CA": 40.078,
-    "CL": 35.45,
+	"H": 1.008,
+	"C": 12.011,
+	"N": 14.007,
+	"O": 15.999,
+	"P": 30.974,
+	"S": 32.06,
+	"MG": 24.305,
+	"NA": 22.990,
+	"K": 39.098,
+	"CA": 40.078,
+	"CL": 35.45,
 	}
 
 	com = 0
@@ -61,7 +61,37 @@ def com(atoms):
 	return com/ms
 
 
-def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
+def _reorder_resid(structure):
+	"""
+		reorder residue ID
+	"""
+	res_counter = 0
+	last_res_obj = None
+
+	all_atoms = list(structure.get_atoms())
+
+	for atom in all_atoms:
+		res_obj = atom.get_parent()
+		if res_obj is not last_res_obj:
+			res_counter +=1
+			old_id = res_obj.id
+			res_obj.id = (old_id[0], 10000 + res_counter, old_id[2]) # initially assign large residue to avoid conflicts
+			last_res_obj = res_obj
+
+	res_counter = 0
+	last_res_obj = None
+	for atom in all_atoms:
+		res_obj = atom.get_parent()
+		if res_obj is not last_res_obj:
+			res_counter +=1
+			old_id = res_obj.id
+			res_obj.id = (old_id[0], res_counter, old_id[2])
+			last_res_obj = res_obj
+
+	return structure
+
+
+def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 	"""
 		convert all atom structure into coarse-grained one
 		current only accept two file format: PDB and CIF
@@ -72,6 +102,11 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 	elif fn.rsplit('.')[-1] in ['pdb', 'PDB']:
 		parser = PDBParser()
 	structure = parser.get_structure('test', fn)
+
+	# reorder residue ID
+	# this step is replaced by pdb4amber
+	#structure = _reorder_resid(structure)
+
 
 	if Mtype == 'protein':
 		atoms = [a for a in structure.get_atoms() if a.get_name() == 'CA']
@@ -87,7 +122,7 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 									 "N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9",
 									# CYT base
 									 "N1","C2","O2","N3","C4","N4","C5","C6",
-																	 )]
+									 )]
 
 	# get the connectivity
 	# 
@@ -98,6 +133,12 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 				'bondlist':[], # bond formed with current bead
 				'anglelist':[] # angle formed with placing current bead in the middle
 			}
+	print(type(info['chain']))
+	if template is not None:
+		info['chain'] = template
+
+	print(type(info['chain']))
+
 	if Mtype == 'protein':
 		chainID = None
 		atomID  = 0
@@ -105,7 +146,8 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 			res = atom.get_parent()
 			chain = res.get_parent()
 			# if chain ID changed, the connectivity was broken and should count as new structure
-			info['chain'].append(chain.id )
+			if template is None:
+				info['chain'].append(chain.id )
 			info['name'].append(atom.get_name() )
 			if res.get_resname() in ['HIS','HIE','HID']: # just convert HIE and HID to HIS
 				info['ATYPE'].append('HIS')
@@ -163,7 +205,6 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 			atomID +=1
 
 		data = pd.DataFrame(data=info)
-			#print(chain.id, res.get_resname(), res.get_id()[1], atom.get_name(),atom.get_coord())
 
 		if visual:
 			dumpPDB(data,vis_fn)
@@ -191,9 +232,10 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 			chain = res.get_parent()
 			chains.append(chain.id)
 			residues.append(res.get_id()[1])
-		chains = set(chains)
+		chains = sorted(set(chains))
 		residues = set(residues)
-		#print(chains, residues)
+		
+		#print(chains)
 
 		for chain in chains:
 			for residue in residues:
@@ -205,49 +247,55 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb'):
 						atom_res.append(a)
 						resname = res.get_resname().strip()
 
-				# section of PO4
-				info['chain'].append(chain)
-				info['name'].append('PO4')
-				if resname in ['ADE','A']:
-					info['ATYPE'].append('ADE')
-				elif resname in ['THY','T']:
-					info['ATYPE'].append('THY')
-				elif resname in ['CYT','C']:
-					info['ATYPE'].append('CYT')
-				elif resname in ['GUA','G']:
-					info['ATYPE'].append('GUA')
-					
-				atoms_po4 = [a for a in atom_res if a.get_name() in PO4]
-				com_po4 = com(atoms_po4)
-				info['xyz'].append(com_po4)
-				info['bondlist'].append([])
-				info['anglelist'].append([])
-				# section of BASE
-				if resname in ['ADE','A']:
-					info['chain'].append(chain)
-					info['ATYPE'].append('ADE')
-					info['name'].append('ADE')
-					atom_base = [a for a in atom_res if a.get_name() in ADE]
-				elif resname in ['THY','T']:
-					info['chain'].append(chain)
-					info['ATYPE'].append('THY')
-					info['name'].append('THY')
-					atom_base = [a for a in atom_res if a.get_name() in THY]
-				elif resname in ['CYT','C']:
-					info['chain'].append(chain)
-					info['ATYPE'].append('CYT')
-					info['name'].append('CYT')
-					atom_base = [a for a in atom_res if a.get_name() in CYT]
-				elif resname in ['GUA','G']:
-					info['chain'].append(chain)
-					info['ATYPE'].append('GUA')
-					info['name'].append('GUA')
-					atom_base = [a for a in atom_res if a.get_name() in GUA]
-					#print(atom_base)
-				com_base = com(atom_base)
-				info['xyz'].append(com_base)
-				info['bondlist'].append([])
-				info['anglelist'].append([])
+				if len(atom_res):
+					# section of PO4
+					if template is None:
+						info['chain'].append(chain)
+					info['name'].append('PO4')
+					if resname in ['ADE','A']:
+						info['ATYPE'].append('ADE')
+					elif resname in ['THY','T']:
+						info['ATYPE'].append('THY')
+					elif resname in ['CYT','C']:
+						info['ATYPE'].append('CYT')
+					elif resname in ['GUA','G']:
+						info['ATYPE'].append('GUA')
+						
+					atoms_po4 = [a for a in atom_res if a.get_name() in PO4]
+					com_po4 = com(atoms_po4)
+					info['xyz'].append(com_po4)
+					info['bondlist'].append([])
+					info['anglelist'].append([])
+					# section of BASE
+					if resname in ['ADE','A']:
+						if template is None:
+							info['chain'].append(chain)
+						info['ATYPE'].append('ADE')
+						info['name'].append('ADE')
+						atom_base = [a for a in atom_res if a.get_name() in ADE]
+					elif resname in ['THY','T']:
+						if template is None:
+							info['chain'].append(chain)
+						info['ATYPE'].append('THY')
+						info['name'].append('THY')
+						atom_base = [a for a in atom_res if a.get_name() in THY]
+					elif resname in ['CYT','C']:
+						if template is None:
+							info['chain'].append(chain)
+						info['ATYPE'].append('CYT')
+						info['name'].append('CYT')
+						atom_base = [a for a in atom_res if a.get_name() in CYT]
+					elif resname in ['GUA','G']:
+						if template is None:
+							info['chain'].append(chain)
+						info['ATYPE'].append('GUA')
+						info['name'].append('GUA')
+						atom_base = [a for a in atom_res if a.get_name() in GUA]
+						#print(atom_base)
+					com_base = com(atom_base)
+					info['xyz'].append(com_base)
+					info['bondlist'].append([])
+					info['anglelist'].append([])
 
 		data = pd.DataFrame(data=info)
 
@@ -292,6 +340,7 @@ def STRSUMMARY(data,Mtype='DNA') -> dict:
 	#atomtypes = []
 	
 	for i, row in data.iterrows():
+		Mtype = row['Mtype']
 		info['atoms'].append(i)
 		chain_tmp = row['chain']
 		if chain_tmp not in info['chains']:
@@ -316,9 +365,36 @@ def STRSUMMARY(data,Mtype='DNA') -> dict:
 
 
 def _update_dataframe(columns, value):
+	"""
+		reindex the index of different molecules,
+		- where columns specify the [anglelist] and [bondlist]
+		- value is the length of previously accumulated atom number
+	"""
 	if isinstance(columns, list) and len(columns) >0:
 		return [i + value for i in columns]
 	return columns
+
+def _change_chain_name(fn_assemble, info_conf):
+	"""
+		in the info_conf, the location of file are required to be specified
+	"""
+	chain_summary = {'protein':[],'DNA':[]}
+	if info_conf['protein']:
+		fn_protein = info_conf['fn_protein']
+		_data_protein = AA2CG(fn_protein,Mtype='protein')
+		#print(_data_protein['chain'].values)
+		#print(_data_protein)
+		#_chain_protein = set(_data_protein['chain'].values)
+		chain_summary['protein'] = _data_protein['chain'].values
+	if info_conf['DNA']:
+		fn_DNA	 = info_conf['fn_DNA']
+		_data_DNA	 = AA2CG(fn_DNA,Mtype='DNA')
+		#print(_data_DNA['chain'].values)
+		#print(_data_DNA)
+		#_chain_DNA	 = set(_data_DNA['chain'])
+		chain_summary['DNA']	 = _data_DNA['chain'].values
+
+	return chain_summary
 
 
 def _splitPDB(fn_assemble,info_conf, vis=False):
@@ -331,12 +407,20 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 
 	total_data = {'chain':[], 'name':[], 'ATYPE':[], 'xyz':[], 'bondlist':[], 'anglelist':[]}
 	total_data = pd.DataFrame(data=total_data)
-	#print(len(total_data))
 
 	Mtypes = ['protein']*info_conf['protein'] + ['DNA']*info_conf['DNA']
 	#print(Mtypes)
 
-	chains_num = info_conf['protein'] * 1 + info_conf['DNA'] * 2
+	chain_summary = _change_chain_name(fn_assemble, info_conf)
+	_chain_protein_template = chain_summary['protein']
+	_chain_DNA_template 	= chain_summary['DNA']
+
+	print(_chain_protein_template, _chain_DNA_template)
+
+	# estimate the total chain number
+	chains_num = info_conf['protein'] * len(set(_chain_protein_template)) + info_conf['DNA'] * len(set(_chain_DNA_template))
+	#print('Total chain number is {}'.format(chains_num))
+	# annotate the chain number starting from 1
 	chains_id = [str(i) for i in range(1, chains_num+1)]
 	
 	mol_id = 0
@@ -347,7 +431,7 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 			line = f.readline()
 			if not line:
 				break
-			elif 'ATOM' in line or 'HEATM' in line:
+			elif 'ATOM' in line or 'HETATM' in line:
 				records.append(line)
 			elif 'TER' in line:
 				with open('_tmp.pdb','w') as tmp:
@@ -355,22 +439,41 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 						tmp.write(record)
 				records = []
 				Mtype = Mtypes[mol_id] # select accroding molecule type
-				_data = AA2CG('_tmp.pdb',Mtype, visual=False) 
-
+				if Mtype == 'protein':
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_protein_template) 
+				elif Mtype == 'DNA':
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_DNA_template) 
+					
 				_data['bondlist'] = _data['bondlist'].apply(_update_dataframe, value=len(total_data))
 				_data['anglelist'] = _data['anglelist'].apply(_update_dataframe, value=len(total_data))
+				_data['Mtype']	= Mtype # add another identifier `Mtype`
+
 				if Mtype == 'protein':
-					_data['chain'] = chains_id[chain_id]
+					_data['chain'] = _chain_protein_template
 				elif Mtype == 'DNA':
-					unique_chains = sorted(_data['chain'].unique())
-					_left_chain = chains_id[chain_id]
+					_data['chain'] = _chain_DNA_template
+
+				unique_chains = sorted(_data['chain'].unique())
+				# construct the chain map
+				chain_map = {}
+				for unique_chain in unique_chains:
+					_x_chain = chains_id[chain_id]
 					chain_id +=1
-					_right_chain = chains_id[chain_id]
-					chain_map = {unique_chains[0]:_left_chain, unique_chain[1]:_right_chain}
-					_data['chain'] = _data['chain'].map(chain_map)
+					chain_map[unique_chain]=_x_chain
+
+				_data['chain'] = _data['chain'].map(chain_map)
+					#_data['chain'] = chains_id[chain_id]
+			#	elif Mtype == 'DNA':
+			#		unique_chains = sorted(_data['chain'].unique())
+			#		print(unique_chains)
+			#		_left_chain = chains_id[chain_id]
+			#		chain_id +=1
+			#		_right_chain = chains_id[chain_id]
+			#		chain_map = {unique_chains[0]:_left_chain, unique_chains[1]:_right_chain}
+			#		_data['chain'] = _data['chain'].map(chain_map)
 
 				mol_id +=1
-				chain_id +=1
+				#chain_id +=1
 				total_data = pd.concat([total_data, _data], ignore_index=True)
 				# removing the temp file, such as _tmp.pdb
 				if os.path.exists('_tmp.pdb'):
@@ -395,10 +498,18 @@ if __name__ == '__main__':
 ###	#for i,row in data.iterrows():
 ###	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
 
-	info_conf={'protein':5,
-				'DNA': 0,
+
+	info_conf={'protein':100,
+				'DNA': 25,
+				'fn_protein':'../test/abeta.pdb',
+				'fn_DNA':'../test/mix_prot_DNA/reorder.pdb'
 				}
-	fn_assemble = '../test/mix_prot/mixture.pdb'
-	total_data = _splitPDB(fn_assemble,info_conf)
-	dumpPDB(total_data, filename='total_mix.pdb')
-	print(total_data)
+	fn_assemble = '../test/mix_prot_DNA/mixture.pdb'
+	change_summary =  _change_chain_name(fn_assemble, info_conf)
+	print(change_summary)
+	total_data = _splitPDB(fn_assemble,info_conf,vis=True)
+	info = STRSUMMARY(total_data)
+	#print(info)
+
+###	print(info['chains'])
+###	print(total_data)
