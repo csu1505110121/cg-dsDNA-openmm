@@ -38,9 +38,11 @@ def build_system(data, Mtype='DNA'):
 		#	if len(row_x['bondlist']):
 		#		for nxt in row_x['bondlist']:
 		#			topology.addBond(i_x, nxt)
+			Mtype = row_x['Mtype']
 			if row_x['chain'] == chain:
 				if Mtype == 'DNA':
-					if i_x % 2 == 0:
+					#if i_x % 2 == 0: # probably should ancher the atomtype / name
+					if row_x['name'] == 'PO4':
 						residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
 						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
 						atoms.append(atom_tmp)
@@ -51,6 +53,10 @@ def build_system(data, Mtype='DNA'):
 					residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
 					atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
 					atoms.append(atom_tmp)
+				elif Mtype == 'organic':
+					pass
+				else:
+					raise('In building the system, however the molecule type {} is not implemented yet'.format(Mtype))
 
 	for i, row in data.iterrows():
 		if len(row['bondlist']):
