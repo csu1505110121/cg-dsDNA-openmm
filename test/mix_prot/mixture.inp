@@ -1,0 +1,20 @@
+#
+# A mixture of water and urea
+#
+
+add_amber_ter
+
+tolerance 2.0
+filetype pdb
+output mixture.pdb
+
+structure ../abeta.pdb 
+  number 100
+  inside box 0. 0. 0. 1000. 1000. 1000. 
+end structure
+
+#structure urea.pdb
+#  number 400
+#  inside box 0. 0. 0. 40. 40. 40. 
+#end structure
+
