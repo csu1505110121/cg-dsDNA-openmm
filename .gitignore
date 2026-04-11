@@ -2,9 +2,19 @@
 .DS_Store
 
 
-__pychche__
+__pycache__/
 
 # directory
 bak/
 validation/
 
+# files
+*.dcd
+*.in
+*.data
+# ignore all pdb file generated in project root
+/*.pdb
+/*.bak
+/*.dat
+/logene
+**/*.bak
