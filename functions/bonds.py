@@ -25,7 +25,6 @@ def harmonic_bond_form(dataframe, Mtype='protein', use_pbc=True, force_group=1):
 	bond_force.addPerBondParameter('r0')
 	bond_force.addPerBondParameter('K')
 
-	#if Mtype == 'protein':
 	for i, row in dataframe.iterrows():
 		Mtype = row['Mtype']
 		if len(row['bondlist']):
@@ -45,17 +44,6 @@ def harmonic_bond_form(dataframe, Mtype='protein', use_pbc=True, force_group=1):
 			else:
 				raise('In applying Bond force, however the molecule type {} is not implemented yet'.format(Mtype))
 
-#	elif Mtype == 'DNA':
-#		for i, row in dataframe.iterrows():
-#			atomidx = row['bondlist']
-#			if len(atomidx):
-#				for nxt in atomidx:
-#					if dataframe.iloc[nxt]['name'] == 'PO4':
-#						bond_force.addBond(i, nxt, [0.55*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
-#					elif dataframe.iloc[nxt]['name'] != 'PO4':
-#						bond_force.addBond(i, nxt, [0.575*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
-#	elif Mtype == 'organic':
-#		pass
 
 	bond_force.setUsesPeriodicBoundaryConditions(use_pbc)
 	bond_force.setForceGroup(force_group)
