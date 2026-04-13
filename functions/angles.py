@@ -22,7 +22,6 @@ def harmonic_cos_angle_form(dataframe, Mtype='DNA', use_pbc=True, force_group=2)
 	angle_force.addPerAngleParameter("theta0")
 	angle_force.addPerAngleParameter("K")
 
-	#if Mtype == 'DNA':
 	for i, row in dataframe.iterrows():
 		Mtype = row['Mtype']
 		if Mtype == 'DNA':
