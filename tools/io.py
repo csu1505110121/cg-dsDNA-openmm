@@ -133,11 +133,9 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 				'bondlist':[], # bond formed with current bead
 				'anglelist':[] # angle formed with placing current bead in the middle
 			}
-	print(type(info['chain']))
+
 	if template is not None:
 		info['chain'] = template
-
-	print(type(info['chain']))
 
 	if Mtype == 'protein':
 		chainID = None
@@ -335,7 +333,7 @@ def STRSUMMARY(data,Mtype='DNA') -> dict:
 		summarise the system's information
 		return a dictionary
 	"""
-	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[]}
+	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[],'total_angles':[]}
 	#chains = []
 	#atomtypes = []
 	
@@ -350,8 +348,11 @@ def STRSUMMARY(data,Mtype='DNA') -> dict:
 		if len(bonds):
 			for bond in bonds:
 				info['bonds'].append([i,bond])
-		if len(angles):
+		if len(angles) and Mtype == 'DNA':  # only store angles related to 'DNA'
 			info['angles'].append([angles[0], i, angles[1]])
+		if len(angles): # store all angles in the system
+			info['total_angles'].append([angles[0], i, angles[1]])
+			
 		if Mtype=='DNA':
 			name_tmp = row['name']
 			if name_tmp not in info['atomtypes']:
@@ -415,7 +416,7 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 	_chain_protein_template = chain_summary['protein']
 	_chain_DNA_template 	= chain_summary['DNA']
 
-	print(_chain_protein_template, _chain_DNA_template)
+	#print(_chain_protein_template, _chain_DNA_template)
 
 	# estimate the total chain number
 	chains_num = info_conf['protein'] * len(set(_chain_protein_template)) + info_conf['DNA'] * len(set(_chain_DNA_template))
