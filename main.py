@@ -9,7 +9,7 @@ from pathlib import Path
 import openmm as mm
 import openmm.app as app
 import openmm.unit as unit
-
+import argparse as ap # library for arg specified from cmd
 
 current_file = Path(__file__).resolve()
 project_root = current_file.parent
@@ -27,6 +27,28 @@ from reporter.reporter import EnergyDecompositionReporter
 
 HPS_PROT = readParam('parameters/protein/hps_urry_parameters.csv')
 HPS_DNA  = readParam('parameters/dsDNA/hps_dsDNA.csv')
+
+
+def main_exe(i_conf,):
+	
+	parser = ap.ArgumentParser(description='Coarse-grained simulation')
+	parser.add_argument('--i_conf','-i', help='Input file of MD configuration', required=True)
+
+
+
+
+
+	args = parser.parse_args()
+
+
+
+
+
+
+
+
+
+
 
 L = 100
 
@@ -134,3 +156,7 @@ simulation.step(1000_000)
 #	for k,v in energies.items():
 #		f.write('{:.6f}\t'.format(v))
 #	f.write('\n')
+
+
+if __name__ == '__main__':
+	
