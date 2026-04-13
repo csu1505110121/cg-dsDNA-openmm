@@ -37,7 +37,7 @@ data = AA2CG('test/JCTC_dsDNA.pdb',Mtype='DNA', visual=False, vis_fn='tmp.pdb')
 # build the system 
 topology, system = build_system(data, Mtype='DNA')
 
-print('TEST', topology.getNumBonds())
+#print('TEST', topology.getNumBonds())
 
 vectors = ( (L,0,0), (0,L,0), (0,0,L) ) * unit.nanometers
 
@@ -49,10 +49,10 @@ positions = data['xyz'].values * 0.1 * unit.nanometer
 
 U_bond = harmonic_bond_form(data, Mtype='DNA')
 U_angle = harmonic_cos_angle_form(data, Mtype='DNA')
-U_stack = stack_12_10(data, Mtype='DNA')
-U_HB	= HB_12_10(data, Mtype='DNA')
-U_exclude = excluded_12_6(data, Mtype='DNA')  # have not implemented Protein
-#U_stack, U_HB, U_exclude, U_vdw = stack_hb_exclude_DNA(data, Mtype='DNA')
+#U_stack = stack_12_10(data, Mtype='DNA')
+#U_HB	= HB_12_10(data, Mtype='DNA')
+#U_exclude = excluded_12_6(data, Mtype='DNA')  # have not implemented Protein
+U_stack, U_HB, U_exclude, U_vdw = stack_hb_exclude_DNA(data, Mtype='DNA')
 U_elec  = elec(data, Mtype='DNA', dielectric=80)
 
 
@@ -62,7 +62,7 @@ system.addForce(U_angle)
 system.addForce(U_stack)
 system.addForce(U_HB)
 system.addForce(U_exclude)
-#system.addForce(U_vdw)
+system.addForce(U_vdw)
 system.addForce(U_elec)
 
 
@@ -104,7 +104,7 @@ with open('minimized_structure.pdb', 'w') as f:
 
 #simulation.context.setParameter("k",0)
 #
-simulation.context.setVelocitiesToTemperature(300*unit.kelvin)
+simulation.context.setVelocitiesToTemperature(TEMP*unit.kelvin)
 
 simulation.reporters.append(app.DCDReporter('traj.dcd', 10_000, enforcePeriodicBox=False))
 
