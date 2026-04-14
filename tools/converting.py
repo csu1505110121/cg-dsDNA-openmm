@@ -17,7 +17,7 @@ project_root = current_file.parent.parent
 if str(project_root) not in sys.path:
 	sys.path.append(str(project_root))
 
-from tools.io import STRSUMMARY, AA2CG
+from tools.io import STRSUMMARY, AA2CG, _change_chain_name
 from parameters.load_params import readParam
 
 HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
@@ -38,8 +38,10 @@ def generateDATA(data:pd.DataFrame, info_conf=conf, Mtype='DNA', fn_data='in.dat
 		generate in.data file for LAMMPS
 	"""
 
+	_chain_summary = _change_chain_name(info_conf['xyz'], info_conf)
+
 	Mtypes = ['protein']*info_conf['protein'] + ['DNA']*info_conf['DNA']
-	chain_num = info_conf['protein'] * 1 + info_conf['DNA'] * 2
+	chain_num = info_conf['protein'] * len(set(_chain_summary['protein'])) + info_conf['DNA'] * len(set(_chain_summary['DNA']))
 
 	info = STRSUMMARY(data, Mtype)
 	L	= max(info_conf['pbc'][0]) * 10 / 2 # convert nm to angstrom
