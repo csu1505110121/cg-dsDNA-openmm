@@ -36,7 +36,9 @@ def parseConf(fn,summary=False, ofn='mdp'):
 			'platform':['CUDA'],
 			'prop':{'Threads':'1'},
 			# output log file
-			'log':'log.openmm'
+			'log':'log.openmm',
+			'trajfile':'trajtest.dcd',
+			'rstfile': 'checkpoint.chk'
 			}
 	with open(fn,'r') as f:
 		while True:
@@ -57,11 +59,10 @@ def parseConf(fn,summary=False, ofn='mdp'):
 						except ValueError:
 							pass
 						info[args] = vals
-		
 	# convert to correct platform and corresponding properties			
 	if info['platform']	 == 'CUDA':
 		if 'DeviceIndex' in info.keys() and len(info['DeviceIndex']):
-			deviceidx = info['DeviceIndex']
+			deviceidx = str(info['DeviceIndex'])
 			info.pop('DeviceIndex')
 		else:
 			deviceidx = '0' # a default value
@@ -73,8 +74,8 @@ def parseConf(fn,summary=False, ofn='mdp'):
 		info['prop'] = {'DeviceIndex':deviceidx, 'Precision': precision}
 
 	if info['platform'] == 'CPU':
-		if 'Threads' in info.keys() and len(info['Threads']):
-			threads = info['Threads']
+		if 'Threads' in info.keys() and len(str(info['Threads'])):
+			threads = str(info['Threads'])
 			info.pop('Threads')
 		else:
 			threads = '1' # set default value to 1
