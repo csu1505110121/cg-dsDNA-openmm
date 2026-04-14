@@ -93,7 +93,7 @@ For your convenience, we provide a script to add `TER` automatically.
 cleanPDB.py -i md.conf # we will introduce how to prepare md.conf for such simulation
 ```
 
-### configure preparation
+### Step 3: configure preparation
 Currently, a template is provided and stored in the `template/md.conf` subdirectory.
 
 We will explain this configure line by line.
@@ -129,3 +129,6 @@ trajfile = trajtest.dcd   ; trajectory file for save trajectories
 rstfile  = checkpoint.chk ; checkpoint file for restarting the simulation
 log = log.openmm
 ```
+
+### Step 4: Running simulations
+
