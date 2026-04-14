@@ -9,11 +9,29 @@ Author info: Qiang Zhu (Vice-Chancellor Research Fellow at University of Wollong
 ![architecture drawn with drawio](./README/HPS_CG.drawio.png)
 
 
-## How to install
+## How to install the environment
 
+The program runs with `python3`. The philosophy is to minimize the dependence of external libraries. 
 
+Two mainly external libraries, namely, `OpenMM` and `Biopython` are required.
 
-## How to use
+For your convenience, we also provide you with a environment file [`requirements.txt`](requirements.txt) to easily build the `env`
+
+Following these commands
+
+```
+conda create -n env_name python=3.8 # install the base environment
+conda activate env_name             # activate the environment
+pip install -r requirements.txt     # install the environment
+```
+
+## How to setup the program
+Download or clone the project into your desired directory (denoted as `/path/to/folder`). Then, add the project directory `cg-dsDNA-openmm` and its tools subdirectory `cg-dsDNA-openmm/tools` to your environment PATH. In addition, ensure that the files `main.py` and `tools/cleanPDB.py` are marked as executable.
+
+```
+export PATH=/path/to/folder/cg-dsDNA-openmm/:$PATH
+export PATH=/path/to/folder/cg-dsDNA-openmm/tools/:$PATH
+```
 
 
 
@@ -76,4 +94,38 @@ cleanPDB.py -i md.conf # we will introduce how to prepare md.conf for such simul
 ```
 
 ### configure preparation
+Currently, a template is provided and stored in the `template/md.conf` subdirectory.
 
+We will explain this configure line by line.
+
+```
+# system info
+protein = 10
+DNA     = 10
+fn_protein =  ../test/abeta.pdb ; file for the monomer protein
+fn_DNA     =  ../test/JCTC_dsDNA.pdb ; file for the monomer DNA
+
+# simulation parameters
+xyz = ../test/Yi.pdb ; file for the assembled systems
+interval = 10_000
+timestep = 0.01  ; in the unit of ps
+temperature = 300 ; in the unit of K
+dielectric  = 80  ; useful when controlling 
+				  ;electrostatic interactions
+cellVector1 = 1000,0,0
+cellVector2 = 0,1000,0
+cellVector3 = 0,0,1000
+cellOrigin  = 0,0,0
+
+
+# machine properties
+platform = CPU
+DeviceIndex=0,1
+Precision=mixed
+
+
+# output option
+trajfile = trajtest.dcd   ; trajectory file for save trajectories
+rstfile  = checkpoint.chk ; checkpoint file for restarting the simulation
+log = log.openmm
+```
