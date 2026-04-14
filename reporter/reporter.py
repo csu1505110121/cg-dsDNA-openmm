@@ -91,8 +91,9 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 	TEMP = conf['temp']
 	plat = mm.Platform.getPlatformByName(conf['platform'])
 	prop = conf['prop']
+	ts   = conf['timestep']
 
-	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
+	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 	simulation = app.Simulation(topology, system, integrator, plat, prop)
 	simulation.context.setPositions(xyz)
 
@@ -112,6 +113,10 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 def NVT(data, conf, Mtype='DNA'):
 	topology, system, = build_system(data, Mtype=Mtype)
 	
+	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
+
+	#print(conf)
+
 	vectors = (conf['pbc']) * unit.nanometers
 	system.setDefaultPeriodicBoxVectors(*vectors)
 	topology.setPeriodicBoxVectors(vectors)
@@ -121,31 +126,38 @@ def NVT(data, conf, Mtype='DNA'):
 	
 	# add forces/function forms
 	U_bond = harmonic_bond_form(data, Mtype=Mtype)
-	U_angle = harmonic_cos_angle_form(data, Mtype=Mtype)
-	U_stack, U_HB, U_exclude, U_vdw = stack_hb_exclude_DNA(data, Mtype=Mtype)
+	if 'DNA' in Mtypes:
+		U_angle = harmonic_cos_angle_form(data, Mtype=Mtype)
+		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data, Mtype=Mtype)
+
+	U_vdw = vdw_12_6(data, Mtype=Mtype)
 	U_elec = elec(data, Mtype=Mtype, dielectric=conf['dielectric'])
 
 	# using defined forces
 	system.addForce(U_bond)
-	system.addForce(U_angle)
-	system.addForce(U_stack)
-	system.addForce(U_HB)
-	system.addForce(U_exclude)
+	if 'DNA' in Mtypes:
+		system.addForce(U_angle)
+		system.addForce(U_stack)
+		system.addForce(U_HB)
+		system.addForce(U_exclude)
+		system.addForce(U_vdw_DNA)
+
 	system.addForce(U_vdw)
 	system.addForce(U_elec)
 
-	TEMP = conf['temp']
+	TEMP = conf['temperature']
 	plat = mm.Platform.getPlatformByName(conf['platform'])
 	prop = conf['prop']
+	ts   = conf['timestep']
 
-	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, 0.010*unit.picoseconds)
+	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 	simulation = app.Simulation(topology, system, integrator, plat, prop)
 	simulation.context.setPositions(xyz)
 	
 	simulation.minimizeEnergy()
 	
 	simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
-	simulation.reporters.append(app.DCDReporter('traj.dcd', 10_000, enforcePeriodicBox=False))
+	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False))
 	
 	labels = {1:'bond',2:'angle',3:'stacking',4:'hb',5:'excluding',6:'vdw',7:'elec'}
 	
@@ -154,8 +166,13 @@ def NVT(data, conf, Mtype='DNA'):
 		state = simulation.context.getState(getEnergy=True, groups={gid})
 		energies[name] = state.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
 
-	simulation.reporters.append(EnergyDecompositionReporter(conf['log'],reportInterval=10_000,labels=labels))
+	# chkpoint reporter
+	simulation.reporters.append(app.CheckpointReporter(conf['rstfile']),reportInterval=conf['interval'])
+
+	# energy reporter
+	simulation.reporters.append(EnergyDecompositionReporter(conf['log'],reportInterval=conf['interval'],labels=labels))
 	simulation.step(conf['step'])
+	simulation.saveCheckpoint(conf['rstfile'])
 	return None
 
 
