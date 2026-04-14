@@ -18,7 +18,7 @@ def dumpPDB(dataframe, filename, conn=True):
 	with open(filename,'w') as f:
 		# section for xyz coordinates
 		for idx, row in dataframe.iterrows():
-			f.write('{:6s}{:>5d}{:<3s} {:3s}{:1s}{:>4d}{:1s}{:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}\n'.format( \
+			f.write('{:6s}{:>5d} {:^4s} {:3s} {:1s}{:>4d}{:1s}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}\n'.format( \
 				'HETATM', idx+1, row['name'], row['ATYPE'], row['chain'], idx+1, '', \
 				row['xyz'][0], row['xyz'][1], row['xyz'][2],\
 				1.0,0.0))
