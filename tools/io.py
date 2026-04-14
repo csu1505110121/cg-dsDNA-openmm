@@ -409,7 +409,7 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 	total_data = {'chain':[], 'name':[], 'ATYPE':[], 'xyz':[], 'bondlist':[], 'anglelist':[]}
 	total_data = pd.DataFrame(data=total_data)
 
-	Mtypes = ['protein']*info_conf['protein'] + ['DNA']*info_conf['DNA']
+	Mtypes = ['protein']*int(info_conf['protein']) + ['DNA']*int(info_conf['DNA'])
 	#print(Mtypes)
 
 	chain_summary = _change_chain_name(fn_assemble, info_conf)
