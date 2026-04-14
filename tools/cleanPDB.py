@@ -37,18 +37,26 @@ def clean(i_conf, option='addTER'):
 
 	mix_ = info_conf['xyz']
 	fnout = mix_.rsplit('.')[0]+'_{}.pdb'.format(option)
-	print(fnout)
+	#print(fnout)
 	output = open(fnout, 'w')
 
 	protein_ = info_conf['fn_protein']
+	if protein_:
+		N_prot   = info_conf['protein']
+	else:
+		N_prot   = 0
 	dna_     = info_conf['fn_DNA']
-	N_prot   = info_conf['protein']
-	N_DNA    = info_conf['DNA']
+	if dna_:
+		N_DNA    = info_conf['DNA']
+	else:
+		N_DNA    = 0
 
 	Mtypes = ['protein'] * int(N_prot) + ['DNA'] * int(N_DNA)
 	
-	atom_prot_ = _count_atoms(protein_)
-	atom_DNA_  = _count_atoms(dna_)
+	if 'protein' in Mtypes:
+		atom_prot_ = _count_atoms(protein_)
+	if 'DNA' in Mtypes:
+		atom_DNA_  = _count_atoms(dna_)
 
 	index_ = []
 	atom_count = 0
