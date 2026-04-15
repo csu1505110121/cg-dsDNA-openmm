@@ -8,6 +8,7 @@ from pathlib import Path
 import openmm as mm
 import openmm.app as app
 import openmm.unit as unit
+import time
 
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent
@@ -32,6 +33,8 @@ def build_system(data, Mtype='DNA'):
 	
 	atoms = []
 
+	print('Starting build system: topology part')
+	s_time = time.perf_counter()
 	for chain in info['chains']:
 		chain_tmp = topology.addChain()
 		for i_x, row_x in data.iterrows():
@@ -57,12 +60,21 @@ def build_system(data, Mtype='DNA'):
 					pass
 				else:
 					raise('In building the system, however the molecule type {} is not implemented yet'.format(Mtype))
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
+	print('Starting build system: bond part')
+	s_time = time.perf_counter()
 	for i, row in data.iterrows():
 		if len(row['bondlist']):
 			for nxt in row['bondlist']:
 				topology.addBond(atoms[i], atoms[nxt])
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	
 
+	print('Starting build system: assign MASS and CHARGE')
+	s_time = time.perf_counter()
 	# section of system
 	system = mm.System()
 	for i, row in data.iterrows():
@@ -73,5 +85,8 @@ def build_system(data, Mtype='DNA'):
 	
 		#print(mass_tmp)
 		system.addParticle(mass_tmp * unit.amu)
+
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	return topology, system
