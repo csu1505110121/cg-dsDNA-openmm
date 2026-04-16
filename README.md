@@ -117,6 +117,10 @@ cellVector2 = 0,1000,0
 cellVector3 = 0,0,1000
 cellOrigin  = 0,0,0
 
+# md control
+md          = md ; options include `sp` and `rst`
+				; sp for single point estimation
+				; rst for restarting md simulations (on going)
 
 # machine properties
 platform = CPU
@@ -132,3 +136,11 @@ log = log.openmm
 
 ### Step 4: Running simulations
 
+```
+main.py -i md.conf -v -lammps 
+```
+
+- `-h` or `--help`: show help message and exit
+- `-i` or `--i_conf`: feed in the `md.conf` prepared in `Step 3`
+- `-v` or `--verbose`: print out more information
+- `-lammps` or `--dumplammps`: output `in.data` and `lammps.in` for running lammps
