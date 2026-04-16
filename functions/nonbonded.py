@@ -338,11 +338,11 @@ def vdw_12_6(dataframe, Mtype='protein', use_pbc=True, force_group=6):
 ###		# lambda
 ###		vdw_force.addParticle([eps* unit.kilocalorie_per_mole, radii* unit.nanometer, lba])
 		
-	if len(group_protein) !=0 and len(group_DNA) !=0:
-		vdw_force.addInteractionGroup(group_protein, group_protein)
-		vdw_force.addInteractionGroup(group_protein, group_DNA)
-	elif len(group_protein) and len(group_DNA) ==0:
-		vdw_force.addInteractionGroup(group_protein, group_protein)
+#	if len(group_protein) !=0 and len(group_DNA) !=0:
+#		vdw_force.addInteractionGroup(group_protein, group_protein)
+#		vdw_force.addInteractionGroup(group_protein, group_DNA)
+#	elif len(group_protein) and len(group_DNA) ==0:
+#		vdw_force.addInteractionGroup(group_protein, group_protein)
 
 
 	vdw_force.setNonbondedMethod(mm.CustomNonbondedForce.CutoffPeriodic)
