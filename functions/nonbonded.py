@@ -249,18 +249,20 @@ def vdw_12_6(dataframe, Mtype='protein', use_pbc=True, force_group=6):
 	"""
 
 	vdw_expression = """
-		step(r_vdw_cut - r)* (lj + (1-lambda)*epsilon) + step(r-r_vdw_cut)*(lambda*lj); 
+		mask_val * step(r_vdw_cut - r)* (lj + (1-lambda)*epsilon) + mask_val * step(r-r_vdw_cut)*(lambda*lj); 
 											lj = 4*epsilon*((sigma/r)^12 - (sigma/r)^6); 
 											r_vdw_cut = 2^(1/6)*sigma; 
 											epsilon = (epsilon1 * epsilon2)^0.5;
 											lambda = 0.5*(lambda1 + lambda2); 
-											sigma=0.5*(sigma1+sigma2)
+											sigma=0.5*(sigma1+sigma2);
+											mask_val = step(1.5 - (is_dna1 + is_dna2))
 	"""
 
 	vdw_force		   = mm.CustomNonbondedForce(vdw_expression)
 	vdw_force.addPerParticleParameter('epsilon')
 	vdw_force.addPerParticleParameter('sigma')
 	vdw_force.addPerParticleParameter('lambda')
+	vdw_force.addPerParticleParameter('is_dna')
 
 
 	sigma_dna_map = HPS_DNA.set_index('atomtype')['sigma'].to_dict()
@@ -302,14 +304,16 @@ def vdw_12_6(dataframe, Mtype='protein', use_pbc=True, force_group=6):
 			eps = 0.2
 			radii = sigma_dna_map.get(_name)
 			lba   = lambd_dna_map.get(_name)
+			is_dna = 1
 		elif _mtype == 'protein':
 			eps = 0.2
 			radii = sigma_prot_map.get(_atype)
 			lba   = lambd_prot_map.get(_atype)
+			is_dna = 0
 		if radii > max_radii:
 			max_radii = radii
 
-		vdw_force.addParticle([eps* unit.kilocalorie_per_mole, radii* unit.nanometer, lba])
+		vdw_force.addParticle([eps* unit.kilocalorie_per_mole, radii* unit.nanometer, lba, is_dna])
 
 
 
