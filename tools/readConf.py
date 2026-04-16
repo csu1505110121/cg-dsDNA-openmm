@@ -61,7 +61,7 @@ def parseConf(fn,summary=False, ofn='mdp'):
 						info[args] = vals
 	# convert to correct platform and corresponding properties			
 	if info['platform']	 == 'CUDA':
-		if 'DeviceIndex' in info.keys() and len(info['DeviceIndex']):
+		if 'DeviceIndex' in info.keys() and len(str(info['DeviceIndex'])):
 			deviceidx = str(info['DeviceIndex'])
 			info.pop('DeviceIndex')
 		else:
