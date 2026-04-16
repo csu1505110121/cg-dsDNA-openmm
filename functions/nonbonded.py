@@ -27,7 +27,7 @@ def stack_hb_exclude_DNA(dataframe, Mtype='DNA', use_pbc=True):
 	
 	# stack definition
 	stack_expression = 'step(rstack -r) * (delta * (5* (sigma/r)^12 - 6*(sigma/r)^10))'
-	stack_force      = mm.CustomBondForce(stack_expression)
+	stack_force	  = mm.CustomBondForce(stack_expression)
 	stack_force.addGlobalParameter('rstack', 0.62*unit.nanometer)
 
 	stack_force.addPerBondParameter('sigma')
@@ -47,7 +47,7 @@ def stack_hb_exclude_DNA(dataframe, Mtype='DNA', use_pbc=True):
 	excluded_expression = """
 			step(rcut-r)*(4*epsilon*((sigma/r)^12 - (sigma/r)^6) + epsilon); rcut=2^(1/6)*sigma
 	"""
-	excluded_force      = mm.CustomBondForce(excluded_expression)
+	excluded_force	  = mm.CustomBondForce(excluded_expression)
 	excluded_force.addGlobalParameter('epsilon', 4*unit.kilocalorie_per_mole)
 	excluded_force.addGlobalParameter('sigma', 0.55*unit.nanometer)
 
@@ -55,7 +55,7 @@ def stack_hb_exclude_DNA(dataframe, Mtype='DNA', use_pbc=True):
 	vdw_expression = """
 		step(r_vdw_cut - r)*step(r_vdw-r) * (4*epsilon*((sigma/r)^12 - (sigma/r)^6) + (1-lambda)*epsilon)
 	"""
-	vdw_force           = mm.CustomBondForce(vdw_expression)
+	vdw_force		   = mm.CustomBondForce(vdw_expression)
 	vdw_force.addGlobalParameter('lambda',0)
 	vdw_force.addGlobalParameter('r_vdw',0.55*2**(1/6)*unit.nanometer)
 	vdw_force.addGlobalParameter('r_vdw_cut',0.6174*unit.nanometer)
@@ -125,14 +125,14 @@ def stack_hb_exclude_DNA(dataframe, Mtype='DNA', use_pbc=True):
 	stack_lookup = {
 		frozenset(['ADE', 'ADE']): 9.7,
 		frozenset(['THY', 'THY']): 7.7,
-        frozenset(['CYT', 'CYT']): 6.2,
-        frozenset(['GUA', 'GUA']): 11.0,
-        frozenset(['ADE', 'THY']): 8.6,
-        frozenset(['ADE', 'CYT']): 7.8,
-        frozenset(['ADE', 'GUA']): 10.3,
-        frozenset(['THY', 'CYT']): 6.9,
-        frozenset(['THY', 'GUA']): 9.2,
-        frozenset(['CYT', 'GUA']): 8.3
+		frozenset(['CYT', 'CYT']): 6.2,
+		frozenset(['GUA', 'GUA']): 11.0,
+		frozenset(['ADE', 'THY']): 8.6,
+		frozenset(['ADE', 'CYT']): 7.8,
+		frozenset(['ADE', 'GUA']): 10.3,
+		frozenset(['THY', 'CYT']): 6.9,
+		frozenset(['THY', 'GUA']): 9.2,
+		frozenset(['CYT', 'GUA']): 8.3
 	}
 #
 #	for i in dna_indices:
@@ -257,7 +257,7 @@ def vdw_12_6(dataframe, Mtype='protein', use_pbc=True, force_group=6):
 											sigma=0.5*(sigma1+sigma2)
 	"""
 
-	vdw_force           = mm.CustomNonbondedForce(vdw_expression)
+	vdw_force		   = mm.CustomNonbondedForce(vdw_expression)
 	vdw_force.addPerParticleParameter('epsilon')
 	vdw_force.addPerParticleParameter('sigma')
 	vdw_force.addPerParticleParameter('lambda')
@@ -271,12 +271,12 @@ def vdw_12_6(dataframe, Mtype='protein', use_pbc=True, force_group=6):
 
 	# store all bonds info including both 'DNA' and 'protein'
 	group_protein = dataframe[dataframe['Mtype']=='protein'].index.tolist() # store index for protein group
-	group_DNA     = dataframe[dataframe['Mtype']=='DNA'].index.tolist() # store index for DNA group
-	_bondlists    = dataframe['bondlist'].tolist()
-	_indices      = dataframe.index.tolist()
-	_Mtypes       = dataframe['Mtype'].tolist()
-	_names        = dataframe['name'].tolist()
-	_atypes       = dataframe['ATYPE'].tolist()
+	group_DNA	 = dataframe[dataframe['Mtype']=='DNA'].index.tolist() # store index for DNA group
+	_bondlists	= dataframe['bondlist'].tolist()
+	_indices	  = dataframe.index.tolist()
+	_Mtypes	   = dataframe['Mtype'].tolist()
+	_names		= dataframe['name'].tolist()
+	_atypes	   = dataframe['ATYPE'].tolist()
 
 	bonds = []
 	for _indice, _bondlist in zip(_indices, _bondlists):
@@ -376,11 +376,11 @@ def elec(dataframe, Mtype='DNA', dielectric=80, use_pbc=True, force_group=7):
 
 
 
-	_indices      = dataframe.index.tolist()
-	_Mtypes       = dataframe['Mtype'].tolist()
-	_names        = dataframe['name'].tolist()
-	_atypes       = dataframe['ATYPE'].tolist()
-	_bondlists    = dataframe['bondlist'].tolist()
+	_indices	  = dataframe.index.tolist()
+	_Mtypes	   = dataframe['Mtype'].tolist()
+	_names		= dataframe['name'].tolist()
+	_atypes	   = dataframe['ATYPE'].tolist()
+	_bondlists	= dataframe['bondlist'].tolist()
 
 	for _mtype, _name, _atype in zip(_Mtypes, _names, _atypes):
 		if _mtype == 'DNA':
