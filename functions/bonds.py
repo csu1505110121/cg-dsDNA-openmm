@@ -25,24 +25,51 @@ def harmonic_bond_form(dataframe, Mtype='protein', use_pbc=True, force_group=1):
 	bond_force.addPerBondParameter('r0')
 	bond_force.addPerBondParameter('K')
 
-	for i, row in dataframe.iterrows():
-		Mtype = row['Mtype']
-		if len(row['bondlist']):
-			if Mtype == 'protein':
-				atomidx = row['bondlist'][0]
-				bond_force.addBond(i, atomidx, [0.38*unit.nanometer, 10*unit.kilocalorie_per_mole/unit.angstrom**2])
-			elif Mtype == 'DNA':
-				atomidx = row['bondlist']
-				if len(atomidx):
-					for nxt in atomidx:
-						if dataframe.iloc[nxt]['name'] == 'PO4':
-							bond_force.addBond(i, nxt, [0.55*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
-						elif dataframe.iloc[nxt]['name'] != 'PO4':
-							bond_force.addBond(i, nxt, [0.575*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
-			elif Mtype == 'organic':
+	_names = dataframe['name'].to_dict()
+	_Mtypes= dataframe['Mtype'].tolist()
+	_atypes= dataframe['ATYPE'].tolist()
+	_bondlists=dataframe['bondlist'].tolist()
+	_indices  =dataframe.index.tolist()
+
+	for _indice, _mtype, _bondlist in zip(_indices, _Mtypes, _bondlists):
+		if len(_bondlist):
+			if _mtype == 'protein':
+				for nxt in _bondlist:
+					bond_force.addBond(_indice, nxt, [0.38*unit.nanometer, 10*unit.kilocalorie_per_mole/unit.angstrom**2])
+			elif _mtype == 'DNA':
+				for nxt in _bondlist:
+					_name = _names[nxt]
+					if _name == 'PO4': # bond for PO4-PO4
+						bond_force.addBond(_indice, nxt, [0.55*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+					elif _name != 'PO4': # bond for PO4-BASE
+						bond_force.addBond(_indice, nxt, [0.575*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+			elif _mtype == 'organic':
 				pass
 			else:
-				raise('In applying Bond force, however the molecule type {} is not implemented yet'.format(Mtype))
+				raise('In applying Bond force, however the molecule type {} is not implemented yet'.format(_mtype))
+	
+
+
+
+###	## old script
+###	for i, row in dataframe.iterrows():
+###		Mtype = row['Mtype']
+###		if len(row['bondlist']):
+###			if Mtype == 'protein':
+###				atomidx = row['bondlist'][0]
+###				bond_force.addBond(i, atomidx, [0.38*unit.nanometer, 10*unit.kilocalorie_per_mole/unit.angstrom**2])
+###			elif Mtype == 'DNA':
+###				atomidx = row['bondlist']
+###				if len(atomidx):
+###					for nxt in atomidx:
+###						if dataframe.iloc[nxt]['name'] == 'PO4':
+###							bond_force.addBond(i, nxt, [0.55*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+###						elif dataframe.iloc[nxt]['name'] != 'PO4':
+###							bond_force.addBond(i, nxt, [0.575*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+###			elif Mtype == 'organic':
+###				pass
+###			else:
+###				raise('In applying Bond force, however the molecule type {} is not implemented yet'.format(Mtype))
 
 
 	bond_force.setUsesPeriodicBoundaryConditions(use_pbc)
