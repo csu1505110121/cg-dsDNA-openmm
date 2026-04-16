@@ -48,7 +48,10 @@ def main_exe(i_conf,dumplammps,verbose):
 	# step3: run simulation
 	if verbose:
 		print('Step 3: Runing simulations')
-	NVT(data, info_conf)
+	if info_conf['md'] == 'md':
+		NVT(data, info_conf)
+	elif info_conf['md'] == 'sp':
+		_sp_estimation(data, info_conf)
 
 
 
