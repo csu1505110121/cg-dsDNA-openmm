@@ -512,7 +512,13 @@ if __name__ == '__main__':
 	change_summary =  _change_chain_name(fn_assemble, info_conf)
 	print(change_summary)
 	total_data = _splitPDB(fn_assemble,info_conf,vis=True)
-	info = STRSUMMARY(total_data)
+	print(total_data[total_data['Mtype']=='DNA'])
+	total_dna = total_data[total_data['Mtype']=='DNA']
+	for idx,bondlist, in zip(total_dna.index.tolist(),total_dna['bondlist'].tolist()):
+		if len(bondlist):
+			for bond in bondlist:
+				print([idx,bond],end=' ')
+	#info = STRSUMMARY(total_data)
 	#print(info)
 
 ###	print(info['chains'])
