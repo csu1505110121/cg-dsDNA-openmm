@@ -8,6 +8,7 @@ from pathlib import Path
 import openmm as mm
 import openmm.app as app
 import openmm.unit as unit
+import time
 
 current_file = Path(__file__).resolve()
 project_root = current_file.parent.parent
@@ -56,6 +57,7 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 	"""
 	topology, system, = build_system(data, Mtype=Mtype)
 
+
 	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
 
 	vectors = (conf['pbc']) * unit.nanometers 
@@ -66,15 +68,38 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 	# load the coordinate you want to estimate the energy
 	xyz = readDUMPFILE(conf['xyz']) * 0.1 * unit.nanometer
 
-	# add forces/function forms
+	# add forces/function forms'
+	print('Starting add forces: Bond')
+	s_time = time.perf_counter()
 	U_bond = harmonic_bond_form(data, Mtype=Mtype)
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
 	if 'DNA' in Mtypes:
+		print('Starting add forces: Angle')
+		s_time = time.perf_counter()
 		U_angle = harmonic_cos_angle_form(data, Mtype=Mtype)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))		
+
+		print('Starting add forces: stack + HB + Exclude')
+		s_time = time.perf_counter()
 		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data, Mtype=Mtype)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 	#elif 'protein' in Mtypes:
 	
+	print('Starting add forces: vdW')
+	s_time = time.perf_counter()
 	U_vdw  = vdw_12_6(data, Mtype=Mtype)
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
+	print('Starting add forces: Coul')
+	s_time = time.perf_counter()
 	U_elec = elec(data, Mtype=Mtype, dielectric=conf['dielectric'])
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	# using defined forces
 	system.addForce(U_bond)
@@ -85,7 +110,8 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 		system.addForce(U_exclude)
 		system.addForce(U_vdw_DNA)
 
-	system.addForce(U_vdw)
+	if 'protein' in Mtypes:
+		system.addForce(U_vdw)
 	system.addForce(U_elec)
 
 	TEMP = conf['temp']
@@ -110,28 +136,56 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 
 	return energies
 
-def NVT(data, conf, Mtype='DNA'):
-	topology, system, = build_system(data, Mtype=Mtype)
+def NVT(data, conf):
+
+	print(data)
+	topology, system, = build_system(data)
+	print('Done with system construction!')
 	
 	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
+	print(Mtypes)
 
-	#print(conf)
 
 	vectors = (conf['pbc']) * unit.nanometers
 	system.setDefaultPeriodicBoxVectors(*vectors)
 	topology.setPeriodicBoxVectors(vectors)
 
 	# load the coordinate you want to estimate the energy
-	xyz = data['xyz'].values * 0.1 * unit.nanometer
+	# convert series into numpy for performance
+	xyz = np.stack(data['xyz'].values) * 0.1 * unit.nanometer
 	
 	# add forces/function forms
-	U_bond = harmonic_bond_form(data, Mtype=Mtype)
-	if 'DNA' in Mtypes:
-		U_angle = harmonic_cos_angle_form(data, Mtype=Mtype)
-		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data, Mtype=Mtype)
+	print('Starting add forces: Bond')
+	s_time = time.perf_counter()
+	U_bond = harmonic_bond_form(data)
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
-	U_vdw = vdw_12_6(data, Mtype=Mtype)
-	U_elec = elec(data, Mtype=Mtype, dielectric=conf['dielectric'])
+	if 'DNA' in Mtypes:
+		print('Starting add forces: Angle')
+		s_time = time.perf_counter()
+		U_angle = harmonic_cos_angle_form(data)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
+		print('Starting add forces: Stack + HB + Exclude + vdW')
+		s_time = time.perf_counter()
+		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
+
+	print('Starting add forces: vdW')
+	s_time = time.perf_counter()
+	U_vdw = vdw_12_6(data)
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
+	print('Starting add forces: Coul')
+	s_time = time.perf_counter()
+	U_elec = elec(data, dielectric=conf['dielectric'])
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	# using defined forces
 	system.addForce(U_bond)
@@ -142,7 +196,8 @@ def NVT(data, conf, Mtype='DNA'):
 		system.addForce(U_exclude)
 		system.addForce(U_vdw_DNA)
 
-	system.addForce(U_vdw)
+	if 'protein' in Mtypes:
+		system.addForce(U_vdw)
 	system.addForce(U_elec)
 
 	TEMP = conf['temperature']
@@ -150,12 +205,22 @@ def NVT(data, conf, Mtype='DNA'):
 	prop = conf['prop']
 	ts   = conf['timestep']
 
+	#print('DEBUG:',ts)
+
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 	simulation = app.Simulation(topology, system, integrator, plat, prop)
 	simulation.context.setPositions(xyz)
 	
+	# section for minimization
+	print('Starting monimization !')
+	s_time = time.perf_counter()
 	simulation.minimizeEnergy()
-	
+	positions = simulation.context.getState(getPositions=True).getPositions()
+	with open('minimized_structure.pdb', 'w') as f:
+		app.PDBFile.writeFile(topology, positions, f)	
+	e_time = time.perf_counter()
+	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
 	simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
 	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False))
 	
@@ -167,7 +232,7 @@ def NVT(data, conf, Mtype='DNA'):
 		energies[name] = state.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
 
 	# chkpoint reporter
-	simulation.reporters.append(app.CheckpointReporter(conf['rstfile']),reportInterval=conf['interval'])
+	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
 
 	# energy reporter
 	simulation.reporters.append(EnergyDecompositionReporter(conf['log'],reportInterval=conf['interval'],labels=labels))
