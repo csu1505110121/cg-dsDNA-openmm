@@ -222,7 +222,8 @@ def NVT(data, conf):
 	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
-	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False))
+	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
+																												# True = wrap; False = leave it there
 	
 	labels = {1:'bond',2:'angle',3:'stacking',4:'hb',5:'excluding',6:'vdw',7:'elec'}
 	
