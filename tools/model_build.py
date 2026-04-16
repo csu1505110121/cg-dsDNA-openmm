@@ -36,30 +36,53 @@ def build_system(data, Mtype='DNA'):
 	print('Starting build system: topology part')
 	s_time = time.perf_counter()
 	for chain in info['chains']:
-		chain_tmp = topology.addChain()
-		for i_x, row_x in data.iterrows():
-		#	if len(row_x['bondlist']):
-		#		for nxt in row_x['bondlist']:
-		#			topology.addBond(i_x, nxt)
-			Mtype = row_x['Mtype']
-			if row_x['chain'] == chain:
-				if Mtype == 'DNA':
-					#if i_x % 2 == 0: # probably should ancher the atomtype / name
-					if row_x['name'] == 'PO4':
-						residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
-						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
-						atoms.append(atom_tmp)
-					else:
-						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
-						atoms.append(atom_tmp)
-				elif Mtype == 'protein':
-					residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
-					atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+		chain_tmp = topology.addChain() # add topology for current chain
+		_dataframe_tmp = data[data['chain']==chain] # extract data belongs to current chain
+		_Mtype = _dataframe_tmp['Mtype'].iloc[0] # since for this chain, it should belong to one Mtype
+		_names = _dataframe_tmp['name'].to_dict()
+		_indices = _dataframe_tmp.index.tolist()
+		_bondlist = _dataframe_tmp['bondlist'].tolist()
+		_atypes = _dataframe_tmp['ATYPE'].to_dict()
+
+		if _Mtype == 'DNA':
+			for _index in _indices:
+				if _names[_index] == 'PO4':
+					residue_tmp = topology.addResidue(name=_atypes[_index], chain = chain_tmp)
+					atom_tmp    = topology.addAtom(name=_names[_index], element=None, residue=residue_tmp)
 					atoms.append(atom_tmp)
-				elif Mtype == 'organic':
-					pass
 				else:
-					raise('In building the system, however the molecule type {} is not implemented yet'.format(Mtype))
+					atom_tmp    = topology.addAtom(name=_names[_index], element=None, residue=residue_tmp)
+					atoms.append(atom_tmp)
+		elif _Mtype == 'protein':
+			for _index in _indices:
+				residue_tmp = topology.addResidue(name=_atypes[_index], chain=chain_tmp)
+				atom_tmp    = topology.addAtom(name=_names[_index], element=None, residue=residue_tmp)
+				atoms.append(atom_tmp)
+		elif _Mtype == 'organic':
+			pass
+		else:
+			raise('In building the system, however the molecule type {} is not implemented yet'.format(Mtype))
+
+#		for i_x, row_x in data.iterrows():
+#			Mtype = row_x['Mtype']
+#			if row_x['chain'] == chain:
+#				if Mtype == 'DNA':
+#					#if i_x % 2 == 0: # probably should ancher the atomtype / name
+#					if row_x['name'] == 'PO4':
+#						residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
+#						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+#						atoms.append(atom_tmp)
+#					else:
+#						atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+#						atoms.append(atom_tmp)
+#				elif Mtype == 'protein':
+#					residue_tmp = topology.addResidue(name=row_x['ATYPE'], chain=chain_tmp)
+#					atom_tmp    = topology.addAtom(name=row_x['name'], element=None, residue=residue_tmp)
+#					atoms.append(atom_tmp)
+#				elif Mtype == 'organic':
+#					pass
+#				else:
+#					raise('In building the system, however the molecule type {} is not implemented yet'.format(Mtype))
 	e_time = time.perf_counter()
 	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
