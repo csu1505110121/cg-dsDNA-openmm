@@ -89,11 +89,12 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 	#elif 'protein' in Mtypes:
 	
-	print('Starting add forces: vdW')
-	s_time = time.perf_counter()
-	U_vdw  = vdw_12_6(data, Mtype=Mtype)
-	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	if 'protein' in Mtypes:
+		print('Starting add forces: vdW')
+		s_time = time.perf_counter()
+		U_vdw  = vdw_12_6(data, Mtype=Mtype)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
@@ -174,12 +175,12 @@ def NVT(data, conf):
 		e_time = time.perf_counter()
 		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
-
-	print('Starting add forces: vdW')
-	s_time = time.perf_counter()
-	U_vdw = vdw_12_6(data)
-	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	if 'protein' in Mtypes:
+		print('Starting add forces: vdW')
+		s_time = time.perf_counter()
+		U_vdw = vdw_12_6(data)
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
