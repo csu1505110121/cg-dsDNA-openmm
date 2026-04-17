@@ -106,7 +106,9 @@ fn_protein =  ../test/abeta.pdb ; file for the monomer protein
 fn_DNA     =  ../test/JCTC_dsDNA.pdb ; file for the monomer DNA
 
 # simulation parameters
-xyz = ../test/Yi.pdb ; file for the assembled systems
+xyz = ../test/Yi.pdb ; file for the assembled systems,
+					; if you use `cleanPDB.py`,
+					; remember to use the filename with addTER
 interval = 10_000
 timestep = 0.01  ; in the unit of ps
 temperature = 300 ; in the unit of K
