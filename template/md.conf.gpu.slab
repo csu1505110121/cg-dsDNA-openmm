@@ -1,0 +1,42 @@
+# system info
+protein = 300
+DNA     = 0
+fn_protein = AF-P04405-F1-model_v4.pdb  ; file for the monomer protein
+fn_DNA     =  reorder.pdb ; file for the monomer DNA
+
+# simulation parameters
+xyz = protein_addTER.pdb ; file for the assembled systems
+interval = 100_000
+timestep = 0.01  ; in the unit of ps
+temperature = 300 ; in the unit of K
+dielectric  = 80  ; useful when controlling 
+				  ;electrostatic interactions
+cellVector1 = 100,0,0
+cellVector2 = 0,100,0
+cellVector3 = 0,0,100
+cellOrigin  = 0,0,0
+step     = 100_000_000
+
+md = slab
+vecScale = 20
+
+# ensemble selection and control
+ensemble = NVT
+ref_bar  = 1.0
+ref_bar_freq = 25
+
+
+# machine properties
+platform = CUDA
+#Threads = 8
+DeviceIndex=0,1
+#Precision=mixed
+
+
+# output option
+rstfile_p = checkpoint.chk
+
+trajfile = trajtest.01.dcd   ; trajectory file for save trajectories
+rstfile  = checkpoint.02.chk ; checkpoint file for restarting the simulation
+log = log.openmm.02
+
