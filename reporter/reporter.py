@@ -137,7 +137,7 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 
 	return energies
 
-def NVT(data, conf):
+def md(data, conf):
 
 	print(data)
 	topology, system, = build_system(data)
@@ -153,7 +153,8 @@ def NVT(data, conf):
 
 	# load the coordinate you want to estimate the energy
 	# convert series into numpy for performance
-	xyz = np.stack(data['xyz'].values) * 0.1 * unit.nanometer
+	if conf['md'] == 'md': # this is for initializing the simulation
+		xyz = np.stack(data['xyz'].values) * 0.1 * unit.nanometer
 	
 	# add forces/function forms
 	print('Starting add forces: Bond')
@@ -206,37 +207,68 @@ def NVT(data, conf):
 	prop = conf['prop']
 	ts   = conf['timestep']
 
-	#print('DEBUG:',ts)
+	if conf['ensemble'] == 'NPT':
+		ref_bar = float(conf['ref_bar'])
+		r_bar_freq = int(conf['ref_bar_freq'])
+		system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 	simulation = app.Simulation(topology, system, integrator, plat, prop)
-	simulation.context.setPositions(xyz)
-	
-	# section for minimization
-	print('Starting monimization !')
-	s_time = time.perf_counter()
-	simulation.minimizeEnergy()
-	positions = simulation.context.getState(getPositions=True).getPositions()
-	with open('minimized_structure.pdb', 'w') as f:
-		app.PDBFile.writeFile(topology, positions, f)	
-	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
-	simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
+	if conf['md'] == 'md':
+		simulation.context.setPositions(xyz)
+	
+	if conf['md'] == 'restart':
+		with open(conf['rstfile_p'],'rb') as f:
+			simulation.loadCheckpoint(f)
+
+	if conf['md'] == 'slab':
+		with open(conf['rstfile_p'],'rb') as f:
+			simulation.loadCheckpoint(f)
+		
+		state = simulation.context.getState(getPositions=True, getVelocities=True)
+		old_vectors = state.getPeriodicBoxVectors()
+		old_positions = state.getPositions()
+		old_velocities = state.getVelocities()
+
+		new_z = old_vectors[2] * conf['vecScale']
+		new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
+
+		simulation.context.setPeriodicBoxVectors(*new_vectors)
+		simulation.context.setPositions(old_positions)
+		simulation.context.setVelocities(old_velocities)
+
+		simulation.minimizeEnergy()
+
+
+	# section for minimization
+	if conf['md'] == 'md':
+		print('Starting monimization !')
+		s_time = time.perf_counter()
+		simulation.minimizeEnergy()
+		positions = simulation.context.getState(getPositions=True).getPositions()
+		with open('minimized_structure.pdb', 'w') as f:
+			app.PDBFile.writeFile(topology, positions, f)	
+		e_time = time.perf_counter()
+		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+
+	if conf['md'] == 'md': # initializing the velocity according to TEMP
+		simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
+
+	# add reporter for trajectory
 	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
 																												# True = wrap; False = leave it there
-	
+
+
+	# chkpoint reporter/restart file
+	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
+
+	# energy reporter
 	labels = {1:'bond',2:'angle',3:'stacking',4:'hb',5:'excluding',6:'vdw',7:'elec'}
-	
 	energies = {}
 	for gid, name in labels.items():
 		state = simulation.context.getState(getEnergy=True, groups={gid})
 		energies[name] = state.getPotentialEnergy().value_in_unit(unit.kilocalorie_per_mole)
-
-	# chkpoint reporter
-	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
-
-	# energy reporter
 	simulation.reporters.append(EnergyDecompositionReporter(conf['log'],reportInterval=conf['interval'],labels=labels))
 	simulation.step(conf['step'])
 	simulation.saveCheckpoint(conf['rstfile'])
