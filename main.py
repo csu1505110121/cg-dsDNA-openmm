@@ -25,7 +25,7 @@ from tools.io import AA2CG, STRSUMMARY, _splitPDB
 from tools.model_build import build_system
 from tools.readConf import parseConf
 from tools.converting import generateDATA
-from reporter.reporter import EnergyDecompositionReporter, NVT
+from reporter.reporter import EnergyDecompositionReporter, md
 
 HPS_PROT = readParam(os.path.join(project_root,'parameters/protein/hps_urry_parameters.csv'))
 HPS_DNA  = readParam(os.path.join(project_root,'parameters/dsDNA/hps_dsDNA.csv'))
@@ -48,8 +48,8 @@ def main_exe(i_conf,dumplammps,verbose):
 	# step3: run simulation
 	if verbose:
 		print('Step 3: Runing simulations')
-	if info_conf['md'] == 'md':
-		NVT(data, info_conf)
+	if info_conf['md'] != 'sp':
+		md(data, info_conf)
 	elif info_conf['md'] == 'sp':
 		_sp_estimation(data, info_conf)
 
