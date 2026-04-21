@@ -20,7 +20,7 @@ def dumpPDB(dataframe, filename, conn=True):
 		for idx, row in dataframe.iterrows():
 			atom_idx = idx+1
 			if atom_idx > 99999:
-				atom_idx -=99999
+				atom_idx = atom_idx % 99999
 			f.write('{:6s}{:>5d} {:^4s} {:3s} {:1s}{:>4d}{:1s}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}\n'.format( \
 				'ATOM', atom_idx, row['name'], row['ATYPE'], row['chain'], 1, '', \
 				row['xyz'][0], row['xyz'][1], row['xyz'][2],\
@@ -439,8 +439,26 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 				records.append(line)
 			elif 'TER' in line:
 				with open('_tmp.pdb','w') as tmp:
-					for record in records:
-						tmp.write(record)
+					_atm_idx = 0
+					_resid = 0
+					_resid_p = ''
+					for record in records: # for those cases converted from gro file
+						_head = record[:6]
+						#_atm_idx = int(record[6:11])
+						_atm_idx += 1
+						_name    = record[12:16]
+						_resn    = record[17:20]
+						_chain   = record[21]
+						_residx  = record[22:26]
+						if _residx != _resid_p or _name.strip() == 'N':
+							_resid_p = _residx
+							_resid  += 1
+						_x       = float(record[30:38])
+						_y       = float(record[38:46])
+						_z       = float(record[46:54])
+						tmp.write('{:6s}{:>5d} {:^4s} {:3s} {:1s}{:>4d}{:1s}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}\n'.format(\
+								_head, _atm_idx, _name, _resn, _chain, _resid, '',\
+								_x, _y, _z, 1.0, 0.0))
 				records = []
 				Mtype = Mtypes[mol_id] # select accroding molecule type
 				if Mtype == 'protein':
