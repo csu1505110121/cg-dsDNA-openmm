@@ -36,12 +36,12 @@ def main_exe(i_conf,dumplammps,verbose):
 	if verbose:
 		print('Step 1: Parsing the input file')
 	info_conf = parseConf(i_conf,summary=verbose, ofn='mdp')
-	print(info_conf)
+	#print(info_conf)
 
 	# step2: parse system and coarse grained them according to rules
 	if verbose:
 		print('Step 2: Parsing the assembled pdb')
-	data      = _splitPDB(info_conf['xyz'],info_conf,vis=verbose)
+	data      = _splitPDB(info_conf,vis=verbose)
 	if dumplammps:
 		generateDATA(data, info_conf)
 	
