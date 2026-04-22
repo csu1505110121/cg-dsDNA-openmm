@@ -271,9 +271,9 @@ def md(data, conf):
 			new_z = old_vectors[2] * conf['vecScale']
 			new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
 			
-			tmp_simu.context.setPeriodicBoxVectors(*new_vectors)
-			tmp_simu.context.setPositions(old_positions)
-			tmp_simu.context.setVelocities(old_velocities)
+			#tmp_simu.context.setPeriodicBoxVectors(*new_vectors)
+			#tmp_simu.context.setPositions(old_positions)
+			#tmp_simu.context.setVelocities(old_velocities)
 
 			del tmp_simu			
 
@@ -281,8 +281,8 @@ def md(data, conf):
 			#positions = state.getPositions()
 			system = _addrigid(system, old_positions, sys_info)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
-			simulation.context.setPositions(old_positions)
 			simulation.context.setPeriodicBoxVectors(*new_vectors)
+			simulation.context.setPositions(old_positions)
 			simulation.context.setVelocities(old_velocities)
 
 		else:
