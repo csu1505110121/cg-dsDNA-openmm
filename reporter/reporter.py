@@ -269,6 +269,8 @@ def md(data, conf):
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
 			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
 			simulation.context.setPositions(old_positions)
+			simulation.context.computeVirtualSites()
+			simulation.context.applyConstraints(1e-6)
 			simulation.context.setVelocities(old_velocities)
 		else:
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
