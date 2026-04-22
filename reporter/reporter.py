@@ -171,33 +171,33 @@ def md(data, conf):
 	s_time = time.perf_counter()
 	U_bond = harmonic_bond_form(data)
 	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	if 'DNA' in Mtypes:
 		print('Starting add forces: Angle')
 		s_time = time.perf_counter()
 		U_angle = harmonic_cos_angle_form(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 		print('Starting add forces: Stack + HB + Exclude + vdW')
 		s_time = time.perf_counter()
 		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	if 'protein' in Mtypes:
 		print('Starting add forces: vdW')
 		s_time = time.perf_counter()
 		U_vdw = vdw_12_6(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
 	U_elec = elec(data, dielectric=conf['dielectric'], C_salt=conf['C_salt'])
 	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	# using defined forces
 	system.addForce(U_bond)
@@ -252,13 +252,22 @@ def md(data, conf):
 			old_vectors = state.getPeriodicBoxVectors()
 			old_positions = state.getPositions()
 			old_velocities = state.getVelocities()
-			
+
+			v1 = old_vectors[0]
+			v2 = old_vectors[1]
+			v3 = old_vectors[2]
+			aligned_vectors = (
+                mm.Vec3(unit.norm(v1), 0, 0),
+                mm.Vec3(v2[0], v2[1], 0),
+                mm.Vec3(v3[0], v3[1], v3[2])
+            ) * unit.nanometers
+
 			del tmp_simu
 			print('Applying constraints!')
 			system = _addrigid(system, old_positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
-			simulation.context.setPeriodicBoxVectors(*old_vectors)
+			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
 			simulation.context.setPositions(old_positions)
 			simulation.context.setVelocities(old_velocities)
 		else:
