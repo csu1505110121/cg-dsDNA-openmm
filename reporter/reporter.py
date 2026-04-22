@@ -53,11 +53,11 @@ class EnergyDecompositionReporter(object):
 		self._out.flush()
 
 
-def _sp_estimation(data, conf,  Mtype='DNA'):
+def _sp_estimation(data, conf):
 	"""
 		single point estimator
 	"""
-	topology, system, = build_system(data, Mtype=Mtype)
+	topology, system, = build_system(data)
 
 
 	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
@@ -73,36 +73,36 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 	# add forces/function forms'
 	print('Starting add forces: Bond')
 	s_time = time.perf_counter()
-	U_bond = harmonic_bond_form(data, Mtype=Mtype)
+	U_bond = harmonic_bond_form(data)
 	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	if 'DNA' in Mtypes:
 		print('Starting add forces: Angle')
 		s_time = time.perf_counter()
-		U_angle = harmonic_cos_angle_form(data, Mtype=Mtype)
+		U_angle = harmonic_cos_angle_form(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))		
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))		
 
 		print('Starting add forces: stack + HB + Exclude')
 		s_time = time.perf_counter()
-		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data, Mtype=Mtype)
+		U_stack, U_HB, U_exclude, U_vdw_DNA = stack_hb_exclude_DNA(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 	#elif 'protein' in Mtypes:
 	
 	if 'protein' in Mtypes:
 		print('Starting add forces: vdW')
 		s_time = time.perf_counter()
-		U_vdw  = vdw_12_6(data, Mtype=Mtype)
+		U_vdw  = vdw_12_6(data)
 		e_time = time.perf_counter()
-		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
-	U_elec = elec(data, Mtype=Mtype, dielectric=conf['dielectric'])
+	U_elec = elec(data, dielectric=conf['dielectric'], C_salt=conf['C_salt'])
 	e_time = time.perf_counter()
-	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	# using defined forces
 	system.addForce(U_bond)
@@ -195,7 +195,7 @@ def md(data, conf):
 
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
-	U_elec = elec(data, dielectric=conf['dielectric'])
+	U_elec = elec(data, dielectric=conf['dielectric'], C_salt=conf['C_salt'])
 	e_time = time.perf_counter()
 	print('Elasping: {:.3f} seconds'.format(e_time - s_time))
 
@@ -290,6 +290,7 @@ def md(data, conf):
 
 			#state = simu.context.getState(getPositions=True)
 			#positions = state.getPositions()
+			print('Applying constraints!')
 			system = _addrigid(system, old_positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
