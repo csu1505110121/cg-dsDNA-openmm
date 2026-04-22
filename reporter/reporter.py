@@ -243,13 +243,18 @@ def md(data, conf):
 				tmp_simu.loadCheckpoint(f)
 
 			state = tmp_simu.context.getState(getPositions=True)
-			positions = state.getPositions()
+			old_vectors = state.getPeriodicBoxVectors()
+			old_positions = state.getPositions()
+			old_velocities = state.getVelocities()
+			
 			del tmp_simu
 			print('Applying constraints!')
 			system = _addrigid(system, positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
-			simulation.context.setPositions(positions)
+			simulation.context.setPeriodicBoxVectors(*old_vectors)
+			simulation.context.setPositions(old_positions)
+			simulation.context.setVelocities(old_velocities)
 		else:
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			with open(conf['rstfile_p'],'rb') as f:
