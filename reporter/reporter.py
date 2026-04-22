@@ -18,6 +18,8 @@ if str(project_root) not in sys.path:
 
 from tools.model_build import build_system
 from tools.converting import readDUMPFILE
+from tools.addRigid import _addrigid
+from tools.io import STRSUMMARY
 from parameters.load_params import readParam
 from functions.angles import harmonic_cos_angle_form
 from functions.bonds import harmonic_bond_form
@@ -139,12 +141,15 @@ def _sp_estimation(data, conf,  Mtype='DNA'):
 
 def md(data, conf):
 
-	print(data)
+	# store the all infomation 
+	sys_info = STRSUMMARY(data)
+
+	#print(data)
 	topology, system, = build_system(data)
 	print('Done with system construction!')
 	
 	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
-	print(Mtypes)
+	#print(Mtypes)
 
 
 	vectors = (conf['pbc']) * unit.nanometers
@@ -217,10 +222,18 @@ def md(data, conf):
 
 	if conf['md'] == 'md':
 		simulation.context.setPositions(xyz)
+		# set up rigid bodies
+		if conf['setrigid'] != 0:
+			print('Applying constraints!')
+			system, simulation = _addrigid(system, simulation, sys_info)
 	
 	if conf['md'] == 'restart':
 		with open(conf['rstfile_p'],'rb') as f:
 			simulation.loadCheckpoint(f)
+
+		# set up rigid bodies
+		if conf['setrigid'] != 0:
+			system, simulation = _addrigid(system, simulation, sys_info)
 
 	if conf['md'] == 'slab':
 		with open(conf['rstfile_p'],'rb') as f:
@@ -238,12 +251,16 @@ def md(data, conf):
 		simulation.context.setPositions(old_positions)
 		simulation.context.setVelocities(old_velocities)
 
+		# set up rigid bodies
+		if conf['setrigid'] != 0:
+			system, simulation = _addrigid(system, simulation, sys_info)
+
 		simulation.minimizeEnergy()
 
 
 	# section for minimization
 	if conf['md'] == 'md':
-		print('Starting monimization !')
+		print('Starting minimization !')
 		s_time = time.perf_counter()
 		simulation.minimizeEnergy()
 		positions = simulation.context.getState(getPositions=True).getPositions()

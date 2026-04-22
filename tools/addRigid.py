@@ -66,9 +66,9 @@ def _addrigid(system, simulation, info_conf):
 			system.removeConstraint(i)
 
 	# Loop over rigid bodies and process them.
-	N_protein = info_conf['protein']
-	N_DNA     = info_conf['DNA']
-	bodies = 
+	#N_protein = info_conf['protein']
+	#N_DNA     = info_conf['DNA']
+	bodies = info_conf['rigidbodies']
 	for particles in bodies:
 		if len(particles) < 5:
 			# All the particles will be "real" particles.
@@ -141,7 +141,5 @@ def _addrigid(system, simulation, info_conf):
 					system.setVirtualSite(i, mm.OutOfPlaneSite(vsiteParticles[0], vsiteParticles[1], vsiteParticles[2], weights[0], weights[1], weights[2]))
 
 					
-		
-
 
 	return system, simulation

@@ -24,7 +24,7 @@ def dumpPDB(dataframe, filename, conn=True):
 			f.write('{:6s}{:>5d} {:^4s} {:3s} {:1s}{:>4d}{:1s}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}\n'.format( \
 				'ATOM', atom_idx, row['name'], row['ATYPE'], row['chain'], 1, '', \
 				row['xyz'][0], row['xyz'][1], row['xyz'][2],\
-				1.0,0.0))
+				row['occ'],row['bfactor']))
 	
 		# section for connectivity
 		if conn:
@@ -94,7 +94,7 @@ def _reorder_resid(structure):
 	return structure
 
 
-def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
+def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None, set_occ_beta=None):
 	"""
 		convert all atom structure into coarse-grained one
 		current only accept two file format: PDB and CIF
@@ -134,11 +134,17 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 				'ATYPE':[],  # residue name
 				'xyz':[],	# coordinates
 				'bondlist':[], # bond formed with current bead
-				'anglelist':[] # angle formed with placing current bead in the middle
+				'anglelist':[], # angle formed with placing current bead in the middle
+				'occ':[],
+				'bfactor':[]
 			}
 
 	if template is not None:
 		info['chain'] = template
+
+	if set_occ_beta is not None:
+		info['occ'] = set_occ_beta[Mtype]['occ'] # store occ
+		info['bfactor'] = set_occ_beta[Mtype]['bfactor']   # store beta
 
 	if Mtype == 'protein':
 		chainID = None
@@ -155,7 +161,10 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 			else:
 				info['ATYPE'].append(res.get_resname())
 			info['xyz'].append(atom.get_coord() )
-			
+			if set_occ_beta is None:
+				info['occ'].append(atom.get_occupancy())  # store occ
+				info['bfactor'].append(atom.get_bfactor())   # store beta
+
 			nxt = atoms[i+1] if i+1 < len(atoms) else None
 			pre = atoms[i-1] if i-1 >= 0 else None
 
@@ -263,10 +272,22 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 						info['ATYPE'].append('GUA')
 						
 					atoms_po4 = [a for a in atom_res if a.get_name() in PO4]
+
+
 					com_po4 = com(atoms_po4)
 					info['xyz'].append(com_po4)
 					info['bondlist'].append([])
 					info['anglelist'].append([])
+					# store occ and bfactor info
+					if set_occ_beta is None:
+						if any([a.get_occupancy() for a in atom_res if a.get_name() in PO4]):
+							info['occ'].append(1)
+						else:
+							info['occ'].append(0)
+						if any([a.get_bfactor() for a in atom_res if a.get_name() in PO4]):
+							info['bfactor'].append(1)
+						else:
+							info['bfactor'].append(0)
 					# section of BASE
 					if resname in ['ADE','A']:
 						if template is None:
@@ -274,55 +295,73 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 						info['ATYPE'].append('ADE')
 						info['name'].append('ADE')
 						atom_base = [a for a in atom_res if a.get_name() in ADE]
+						is_occ    = any([a.get_occupancy() for a in atom_res if a.get_name() in ADE])
+						is_bfactor= any([a.get_bfactor() for a in atom_res if a.get_name() in ADE])
 					elif resname in ['THY','T']:
 						if template is None:
 							info['chain'].append(chain)
 						info['ATYPE'].append('THY')
 						info['name'].append('THY')
 						atom_base = [a for a in atom_res if a.get_name() in THY]
+						is_occ    = any([a.get_occupancy() for a in atom_res if a.get_name() in THY])
+						is_bfactor= any([a.get_bfactor() for a in atom_res if a.get_name() in THY])
 					elif resname in ['CYT','C']:
 						if template is None:
 							info['chain'].append(chain)
 						info['ATYPE'].append('CYT')
 						info['name'].append('CYT')
 						atom_base = [a for a in atom_res if a.get_name() in CYT]
+						is_occ    = any([a.get_occupancy() for a in atom_res if a.get_name() in CYT])
+						is_bfactor= any([a.get_bfactor() for a in atom_res if a.get_name() in CYT])
 					elif resname in ['GUA','G']:
 						if template is None:
 							info['chain'].append(chain)
 						info['ATYPE'].append('GUA')
 						info['name'].append('GUA')
 						atom_base = [a for a in atom_res if a.get_name() in GUA]
+						is_occ    = any([a.get_occupancy() for a in atom_res if a.get_name() in GUA])
+						is_bfactor= any([a.get_bfactor() for a in atom_res if a.get_name() in GUA])
 						#print(atom_base)
 					com_base = com(atom_base)
 					info['xyz'].append(com_base)
 					info['bondlist'].append([])
 					info['anglelist'].append([])
+					if set_occ_beta is None:
+						if is_occ:
+							info['occ'].append(1)
+						else:
+							info['occ'].append(0)
+						if is_bfactor:
+							info['bfactor'].append(1)
+						else:
+							info['bfactor'].append(0)
 
 		data = pd.DataFrame(data=info)
 
-		for idx,row in data.iterrows():
-			
+
+		for idx in data.index:
 			pre2 = data.iloc[idx-2] if idx-2 >= 0 else None
 			pre1 = data.iloc[idx-1] if idx-1 >= 0 else None
 			nxt1 = data.iloc[idx+1] if idx+1 < len(data) else None
 			nxt2 = data.iloc[idx+2] if idx+2 < len(data) else None
 
+			row = data.loc[idx]
+
 			if row['name'] == 'PO4':
 				if pre2 is None and nxt2 is not None:
-					row['bondlist'] = [idx+1,idx+2]
+					data.at[idx,'bondlist'] = [idx+1,idx+2]
 
 				elif pre2 is not None and nxt2 is not None:
 					if row['chain'] == nxt2['chain'] and row['chain'] == pre2['chain']:
-						row['bondlist'] = [idx+1, idx+2]
-						row['anglelist'] = [idx-2, idx+2]
+						data.at[idx,'bondlist'] = [idx+1, idx+2]
+						data.at[idx,'anglelist'] = [idx-2, idx+2]
 					elif row['chain'] == nxt2['chain'] and row['chain'] != pre2['chain']:
-						row['bondlist'] = [idx+1,idx+2]
+						data.at[idx,'bondlist'] = [idx+1,idx+2]
 					else:
-						row['bondlist'] = [idx+1]
+						data.at[idx,'bondlist'] = [idx+1]
 
 				elif pre2 is not None and nxt2 is None:
-					row['bondlist'] = [idx+1]
-
+					data.at[idx,'bondlist'] = [idx+1]
 
 		if visual:
 			dumpPDB(data,vis_fn)
@@ -331,21 +370,37 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None):
 	elif Mtype == 'organic':
 		pass
 
+
+
+
 def STRSUMMARY(data,Mtype='DNA') -> dict:
 	"""
 		summarise the system's information
 		return a dictionary
 	"""
-	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[],'total_angles':[]}
+	info = {'chains':[], 'atomtypes':[], 'atoms':[], 'bonds':[], 'angles':[],'total_angles':[],'rigidbodies':[]}
 	#chains = []
 	#atomtypes = []
 	
-	for i, row in data.iterrows():
+	_rigidlist = []
+
+	for i in data.index:
+		row = data.loc[i]
 		Mtype = row['Mtype']
+		is_rigid = row['bfactor']
 		info['atoms'].append(i)
 		chain_tmp = row['chain']
 		if chain_tmp not in info['chains']:
 			info['chains'].append(chain_tmp)
+			if len(info['chains']) > 1:
+				info['rigidbodies'].append(_rigidlist)
+			_rigidlist = []
+		elif i == len(data) -1:
+			info['rigidbodies'].append(_rigidlist)
+		else:
+			if is_rigid:
+				_rigidlist.append(i)
+				
 		bonds = row['bondlist']
 		angles = row['anglelist']
 		if len(bonds):
@@ -364,6 +419,7 @@ def STRSUMMARY(data,Mtype='DNA') -> dict:
 			name_tmp = row['ATYPE']
 			if name_tmp not in info['atomtypes']:
 				info['atomtypes'].append(name_tmp)
+
 		
 	return info
 
@@ -400,6 +456,26 @@ def _change_chain_name(fn_assemble, info_conf):
 
 	return chain_summary
 
+def _set_occ_bfactor(info_conf):
+	"""
+		return the occ and bfactor from the template/monomer file
+	"""
+	summary = {'protein': {'occ':[],'bfactor':[]},\
+				 'DNA':{'occ':[], 'bfactor':[]}}
+	if info_conf['protein']:
+		fn_protein = info_conf['fn_protein']
+		_data_protein = AA2CG(fn_protein, Mtype='protein')
+		summary['protein']['occ'] = _data_protein['occ'].values
+		summary['protein']['bfactor'] = _data_protein['bfactor'].values
+	if info_conf['DNA']:
+		fn_DNA     = info_conf['fn_DNA']
+		_data_DNA  = AA2CG(fn_DNA, Mtype='DNA')
+		summary['DNA']['occ'] = _data_DNA['occ'].values
+		summary['DNA']['bfactor'] = _data_DNA['bfactor'].values
+
+	return summary
+
+
 
 def _splitPDB(fn_assemble,info_conf, vis=False):
 	"""
@@ -419,6 +495,8 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 	_chain_protein_template = chain_summary['protein']
 	_chain_DNA_template 	= chain_summary['DNA']
 
+	_occ_bfactor_summary       = _set_occ_bfactor(info_conf)
+
 	#print(_chain_protein_template, _chain_DNA_template)
 
 	# estimate the total chain number
@@ -427,6 +505,8 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 	# annotate the chain number starting from 1
 	chains_id = [str(i) for i in range(1, chains_num+1)]
 	
+
+	## SPLIT ASSEMBLED PDB INTO INVIDIDUAL PDBs
 	mol_id = 0
 	chain_id = 0
 	with open(fn_assemble,'r') as f:
@@ -462,9 +542,9 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 				records = []
 				Mtype = Mtypes[mol_id] # select accroding molecule type
 				if Mtype == 'protein':
-					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_protein_template) 
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_protein_template, set_occ_beta=_occ_bfactor_summary) 
 				elif Mtype == 'DNA':
-					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_DNA_template) 
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_DNA_template, set_occ_beta=_occ_bfactor_summary) 
 					
 				_data['bondlist'] = _data['bondlist'].apply(_update_dataframe, value=len(total_data))
 				_data['anglelist'] = _data['anglelist'].apply(_update_dataframe, value=len(total_data))
@@ -513,8 +593,8 @@ if __name__ == '__main__':
 ###	data = AA2CG('../test/tdp_43.cif',visual=False)
 ###	print(data)
 ###	# DNA test
-###	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
-###	print(data)
+#	data = AA2CG('../test/JCTC_dsDNA.pdb',Mtype='DNA', visual=True, vis_fn='tmp.pdb')
+#	print(data)
 ###	info = STRSUMMARY(data)
 ###	print('chains No. {}, atomtypes No. {}'.format(len(info['chains']), len(info['atomtypes'])))
 ###	#for i,row in data.iterrows():
@@ -529,15 +609,21 @@ if __name__ == '__main__':
 	fn_assemble = '../test/mix_prot_DNA/mixture.pdb'
 	change_summary =  _change_chain_name(fn_assemble, info_conf)
 	print(change_summary)
+	_occ_bfactor_summary = _set_occ_bfactor(info_conf)
+	print(_occ_bfactor_summary)
 	total_data = _splitPDB(fn_assemble,info_conf,vis=True)
-	print(total_data[total_data['Mtype']=='DNA'])
-	total_dna = total_data[total_data['Mtype']=='DNA']
-	for idx,bondlist, in zip(total_dna.index.tolist(),total_dna['bondlist'].tolist()):
-		if len(bondlist):
-			for bond in bondlist:
-				print([idx,bond],end=' ')
-	#info = STRSUMMARY(total_data)
-	#print(info)
+	print(total_data)
+	info = STRSUMMARY(total_data)
+	print(info['chains'])
+	print(len(info['rigidbodies']))
+
+
+#	print(total_data[total_data['Mtype']=='DNA'])
+#	total_dna = total_data[total_data['Mtype']=='DNA']
+#	for idx,bondlist, in zip(total_dna.index.tolist(),total_dna['bondlist'].tolist()):
+#		if len(bondlist):
+#			for bond in bondlist:
+#				print([idx,bond],end=' ')
 
 ###	print(info['chains'])
 ###	print(total_data)

@@ -36,7 +36,7 @@ def main_exe(i_conf,dumplammps,verbose):
 	if verbose:
 		print('Step 1: Parsing the input file')
 	info_conf = parseConf(i_conf,summary=verbose, ofn='mdp')
-	#print(info_conf)
+	print(info_conf)
 
 	# step2: parse system and coarse grained them according to rules
 	if verbose:
