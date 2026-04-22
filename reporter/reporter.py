@@ -242,7 +242,7 @@ def md(data, conf):
 			with open(conf['rstfile_p'],'rb') as f:
 				tmp_simu.loadCheckpoint(f)
 
-			state = tmp_simu.context.getState(getPositions=True)
+			state = tmp_simu.context.getState(getPositions=True, getVelocities=True)
 			old_vectors = state.getPeriodicBoxVectors()
 			old_positions = state.getPositions()
 			old_velocities = state.getVelocities()
