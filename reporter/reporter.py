@@ -218,42 +218,90 @@ def md(data, conf):
 		system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
-	simulation = app.Simulation(topology, system, integrator, plat, prop)
+	#simulation = app.Simulation(topology, system, integrator, plat, prop)
 
 	if conf['md'] == 'md':
-		simulation.context.setPositions(xyz)
+		#simulation.context.setPositions(xyz)
 		# set up rigid bodies
 		if conf['setrigid'] != 0:
+			#state = simulation.context.getState(getPositions=True)
+			#positions = state.getPositions()
 			print('Applying constraints!')
-			system, simulation = _addrigid(system, simulation, sys_info)
+			system = _addrigid(system, xyz, sys_info)
+			simulation = app.Simulation(topology, system, integrator, plat, prop)
+			simulation.context.setPositions(xyz)
+		else:
+			simulation = app.Simulation(topology, system, integrator, plat, prop)
+			simulation.context.setPositions(xyz)
 	
 	if conf['md'] == 'restart':
-		with open(conf['rstfile_p'],'rb') as f:
-			simulation.loadCheckpoint(f)
 
 		# set up rigid bodies
 		if conf['setrigid'] != 0:
-			system, simulation = _addrigid(system, simulation, sys_info)
+			tmp_simu = app.Simulation(topology, system, integrator, plat, prop)
+			with open(conf['rstfile_p'],'rb') as f:
+				tmp_simu.loadCheckpoint(f)
+
+			state = tmp_simu.context.getState(getPositions=True)
+			positions = state.getPositions()
+			del tmp_simu
+			print('Applying constraints!')
+			system = _addrigid(system, positions, sys_info)
+			simulation = app.Simulation(topology, system, integrator, plat, prop)
+			simulation.context.setPositions(positions)
+		else:
+			simulation = app.Simulation(topology, system, integrator, plat, prop)
+			with open(conf['rstfile_p'],'rb') as f:
+				simulation.loadCheckpoint(f)
+			
 
 	if conf['md'] == 'slab':
-		with open(conf['rstfile_p'],'rb') as f:
-			simulation.loadCheckpoint(f)
-		
-		state = simulation.context.getState(getPositions=True, getVelocities=True)
-		old_vectors = state.getPeriodicBoxVectors()
-		old_positions = state.getPositions()
-		old_velocities = state.getVelocities()
-
-		new_z = old_vectors[2] * conf['vecScale']
-		new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
-
-		simulation.context.setPeriodicBoxVectors(*new_vectors)
-		simulation.context.setPositions(old_positions)
-		simulation.context.setVelocities(old_velocities)
 
 		# set up rigid bodies
 		if conf['setrigid'] != 0:
-			system, simulation = _addrigid(system, simulation, sys_info)
+			tmp_simu = app.Simulation(topology, system, integrator, plat, prop)
+			with open(conf['rstfile_p'],'rb') as f:
+				tmp_simu.loadCheckpoint(f)
+
+			state = tmp_simu.context.getState(getPositions=True, getVelocities=True)
+			old_vectors = state.getPeriodicBoxVectors()
+			old_positions = state.getPositions()
+			old_velocities = state.getVelocities()
+
+			new_z = old_vectors[2] * conf['vecScale']
+			new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
+			
+			tmp_simu.context.setPeriodicBoxVectors(*new_vectors)
+			tmp_simu.context.setPositions(old_positions)
+			tmp_simu.context.setVelocities(old_velocities)
+
+			del tmp_simu			
+
+			#state = simu.context.getState(getPositions=True)
+			#positions = state.getPositions()
+			system = _addrigid(system, old_positions, sys_info)
+			simulation = app.Simulation(topology, system, integrator, plat, prop)
+			simulation.context.setPositions(old_positions)
+			simulation.context.setPeriodicBoxVectors(*new_vectors)
+			simulation.context.setVelocities(old_velocities)
+
+		else:
+			with open(conf['rstfile_p'],'rb') as f:
+				simulation.loadCheckpoint(f)
+			
+			state = simulation.context.getState(getPositions=True, getVelocities=True)
+			old_vectors = state.getPeriodicBoxVectors()
+			old_positions = state.getPositions()
+			old_velocities = state.getVelocities()
+	
+			new_z = old_vectors[2] * conf['vecScale']
+			new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
+	
+			simulation.context.setPeriodicBoxVectors(*new_vectors)
+			simulation.context.setPositions(old_positions)
+			simulation.context.setVelocities(old_velocities)
+			
+
 
 		simulation.minimizeEnergy()
 

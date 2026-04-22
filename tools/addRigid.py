@@ -54,10 +54,10 @@ HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_par
 HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
 
 
-def _addrigid(system, simulation, info_conf):
-	# retrieve the positions from the simulation
-	state = simulation.context.getState(getPositions=True)
-	positions = state.getPositions()
+def _addrigid(system, positions, info_conf):
+#	# retrieve the positions from the simulation
+#	state = simulation.context.getState(getPositions=True)
+#	positions = state.getPositions()
 
 	# Remove any constraints involving particles in rigid bodies.
 	for i in range(system.getNumConstraints()-1, -1, -1):
@@ -142,4 +142,4 @@ def _addrigid(system, simulation, info_conf):
 
 					
 
-	return system, simulation
+	return system
