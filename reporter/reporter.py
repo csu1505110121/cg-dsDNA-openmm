@@ -156,6 +156,11 @@ def md(data, conf):
 	system.setDefaultPeriodicBoxVectors(*vectors)
 	topology.setPeriodicBoxVectors(vectors)
 
+
+	# remove the CMMotion
+	force  = mm.CMMotionRemover()
+	system.addForce(force)
+
 	# load the coordinate you want to estimate the energy
 	# convert series into numpy for performance
 	if conf['md'] == 'md': # this is for initializing the simulation
