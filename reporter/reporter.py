@@ -249,7 +249,7 @@ def md(data, conf):
 			
 			del tmp_simu
 			print('Applying constraints!')
-			system = _addrigid(system, positions, sys_info)
+			system = _addrigid(system, old_positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
 			simulation.context.setPeriodicBoxVectors(*old_vectors)
