@@ -34,13 +34,6 @@ def harmonic_cos_angle_form(dataframe, Mtype='DNA', use_pbc=True, force_group=2)
 		if len(_anglelist):
 			angle_force.addAngle(_anglelist[0], _indice, _anglelist[1], [180*unit.degree, 40*unit.kilocalorie_per_mole])
 
-	#### old script
-##	for i, row in dataframe.iterrows():
-##		Mtype = row['Mtype']
-##		if Mtype == 'DNA':
-##			atomidx = row['anglelist']
-##			if len(atomidx):
-##				angle_force.addAngle(atomidx[0], i, atomidx[1], [180*unit.degree, 40*unit.kilocalorie_per_mole])
 
 	angle_force.setUsesPeriodicBoundaryConditions(use_pbc)
 	angle_force.setForceGroup(force_group)
