@@ -373,7 +373,7 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None, se
 
 
 
-def STRSUMMARY(data,Mtype='DNA') -> dict:
+def STRSUMMARY(data:pd.DataFrame) -> dict:
 	"""
 		summarise the system's information
 		return a dictionary
@@ -434,7 +434,7 @@ def _update_dataframe(columns, value):
 		return [i + value for i in columns]
 	return columns
 
-def _change_chain_name(fn_assemble, info_conf):
+def _change_chain_name(info_conf):
 	"""
 		in the info_conf, the location of file are required to be specified
 	"""
@@ -477,7 +477,7 @@ def _set_occ_bfactor(info_conf):
 
 
 
-def _splitPDB(fn_assemble,info_conf, vis=False):
+def _splitPDB(info_conf, vis=False):
 	"""
 		split the assembled pdb into pdbs and assign different chains 
 		and Mtype:
@@ -485,13 +485,15 @@ def _splitPDB(fn_assemble,info_conf, vis=False):
 			- DNA
 	"""
 
+	fn_assemble = info_conf['xyz']
+
 	total_data = {'chain':[], 'name':[], 'ATYPE':[], 'xyz':[], 'bondlist':[], 'anglelist':[]}
 	total_data = pd.DataFrame(data=total_data)
 
 	Mtypes = ['protein']*int(info_conf['protein']) + ['DNA']*int(info_conf['DNA'])
 	#print(Mtypes)
 
-	chain_summary = _change_chain_name(fn_assemble, info_conf)
+	chain_summary = _change_chain_name(info_conf)
 	_chain_protein_template = chain_summary['protein']
 	_chain_DNA_template 	= chain_summary['DNA']
 
@@ -604,14 +606,15 @@ if __name__ == '__main__':
 	info_conf={'protein':100,
 				'DNA': 25,
 				'fn_protein':'../test/abeta.pdb',
-				'fn_DNA':'../test/mix_prot_DNA/reorder.pdb'
+				'fn_DNA':'../test/mix_prot_DNA/reorder.pdb',
+				'xyz':'../test/mix_prot_DNA/mixture.pdb',
 				}
-	fn_assemble = '../test/mix_prot_DNA/mixture.pdb'
-	change_summary =  _change_chain_name(fn_assemble, info_conf)
+	fn_assemble = info_conf['xyz']
+	change_summary =  _change_chain_name(info_conf)
 	print(change_summary)
 	_occ_bfactor_summary = _set_occ_bfactor(info_conf)
 	print(_occ_bfactor_summary)
-	total_data = _splitPDB(fn_assemble,info_conf,vis=True)
+	total_data = _splitPDB(info_conf,vis=True)
 	print(total_data)
 	info = STRSUMMARY(total_data)
 	print(info['chains'])
