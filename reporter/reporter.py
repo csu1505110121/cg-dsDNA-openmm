@@ -235,6 +235,7 @@ def md(data, conf):
 			system = _addrigid(system, xyz, sys_info)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
+			simulation.context.applyConstraints(1e-6) # for test 
 		else:
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
