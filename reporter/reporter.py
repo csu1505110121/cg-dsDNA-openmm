@@ -229,7 +229,9 @@ def md(data, conf):
 			#positions = state.getPositions()
 			print('Applying constraints!')
 			system = _addrigid(system, xyz, sys_info)
+			print("After _addrigid vectors:", system.getDefaultPeriodicBoxVectors())
 			system.setDefaultPeriodicBoxVectors(*vectors)
+			print("After setDefault vectors:", system.getDefaultPeriodicBoxVectors())
 			if conf['ensemble'] == 'NPT':
 				ref_bar = float(conf['ref_bar'])
 				r_bar_freq = int(conf['ref_bar_freq'])
