@@ -224,6 +224,8 @@ def vdw_12_6(dataframe, use_pbc=True, force_group=6):
 	vdw_force.setCutoffDistance(4*max_radii * unit.nanometer)
 	vdw_force.setForceGroup(force_group)
 
+	print('CUTOFF distance for vdw force is set to {} nm'.format(4*max_radii))
+
 	return vdw_force
 
 
@@ -286,6 +288,7 @@ def elec(dataframe, dielectric=80, C_salt=1, use_pbc=True, force_group=7):
 	elec_force.setCutoffDistance(3.5*unit.nanometer)
 	elec_force.setForceGroup(force_group)
 
+	print('CUTOFF distance for elec force is set to {} nm'.format(3.5))	
 	return elec_force
 
 if __name__ == '__main__':
