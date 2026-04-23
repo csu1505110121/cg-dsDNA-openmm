@@ -280,6 +280,24 @@ def md(data, conf):
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			with open(conf['rstfile_p'],'rb') as f:
 				simulation.loadCheckpoint(f)
+
+			state = simulation.context.getState(getPositions=True, getVelocities=True)
+			old_vectors = state.getPeriodicBoxVectors()
+			old_positions = state.getPositions()
+			old_velocities = state.getVelocities()
+
+			v1 = old_vectors[0]
+			v2 = old_vectors[1]
+			v3 = old_vectors[2]
+			aligned_vectors = (
+                mm.Vec3(unit.norm(v1), 0, 0),
+                mm.Vec3(v2[0], v2[1], 0),
+                mm.Vec3(v3[0], v3[1], v3[2])
+            ) * unit.nanometers
+			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
+			simulation.context.setPositions(old_positions)
+			simulation.context.setVelocities(old_velocities)
+
 			
 
 	if conf['md'] == 'slab':
