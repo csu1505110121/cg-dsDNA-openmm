@@ -217,10 +217,6 @@ def md(data, conf):
 	prop = conf['prop']
 	ts   = conf['timestep']
 
-	if conf['ensemble'] == 'NPT':
-		ref_bar = float(conf['ref_bar'])
-		r_bar_freq = int(conf['ref_bar_freq'])
-		system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 	#simulation = app.Simulation(topology, system, integrator, plat, prop)
@@ -234,12 +230,20 @@ def md(data, conf):
 			print('Applying constraints!')
 			system = _addrigid(system, xyz, sys_info)
 			system.setDefaultPeriodicBoxVectors(*vectors)
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
 			simulation.context.computeVirtualSites()
 			simulation.context.applyConstraints(1e-6) # for test 
 			simulation.context.computeVirtualSites()
 		else:
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
@@ -270,6 +274,10 @@ def md(data, conf):
 			print('Applying constraints!')
 			system = _addrigid(system, old_positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
 			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
 			simulation.context.setPositions(old_positions)
@@ -280,6 +288,11 @@ def md(data, conf):
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			with open(conf['rstfile_p'],'rb') as f:
 				simulation.loadCheckpoint(f)
+
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 
 			state = simulation.context.getState(getPositions=True, getVelocities=True)
 			old_vectors = state.getPeriodicBoxVectors()
@@ -327,6 +340,11 @@ def md(data, conf):
 			print('Applying constraints!')
 			system = _addrigid(system, old_positions, sys_info)
 			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
+
 			simulation = app.Simulation(topology, system, _integrator, plat, prop)
 			simulation.context.setPeriodicBoxVectors(*new_vectors)
 			simulation.context.setPositions(old_positions)
@@ -335,7 +353,12 @@ def md(data, conf):
 		else:
 			with open(conf['rstfile_p'],'rb') as f:
 				simulation.loadCheckpoint(f)
-			
+			if conf['ensemble'] == 'NPT':
+				ref_bar = float(conf['ref_bar'])
+				r_bar_freq = int(conf['ref_bar_freq'])
+				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
+
+
 			state = simulation.context.getState(getPositions=True, getVelocities=True)
 			old_vectors = state.getPeriodicBoxVectors()
 			old_positions = state.getPositions()
