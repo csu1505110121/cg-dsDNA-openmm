@@ -257,9 +257,9 @@ def md(data, conf):
 			old_positions = state.getPositions()
 			old_velocities = state.getVelocities()
 
-			v1 = old_vectors[0]
-			v2 = old_vectors[1]
-			v3 = old_vectors[2]
+			v1 = old_vectors[0].value_in_unit(unit.nanometer)
+			v2 = old_vectors[1].value_in_unit(unit.nanometer)
+			v3 = old_vectors[2].value_in_unit(unit.nanometer)
 			aligned_vectors = (
                 mm.Vec3(unit.norm(v1), 0, 0),
                 mm.Vec3(v2[0], v2[1], 0),
@@ -286,9 +286,9 @@ def md(data, conf):
 			old_positions = state.getPositions()
 			old_velocities = state.getVelocities()
 
-			v1 = old_vectors[0]
-			v2 = old_vectors[1]
-			v3 = old_vectors[2]
+			v1 = old_vectors[0].value_in_unit(unit.nanometer)
+			v2 = old_vectors[1].value_in_unit(unit.nanometer)
+			v3 = old_vectors[2].value_in_unit(unit.nanometer)
 			aligned_vectors = (
                 mm.Vec3(unit.norm(v1), 0, 0),
                 mm.Vec3(v2[0], v2[1], 0),
