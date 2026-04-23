@@ -182,10 +182,10 @@ def _sp_estimation(data, conf):
 def _get_xyz_from_checkpoint(topology, system, conf):
     """从checkpoint文件中读取坐标"""
     # 用一个临时的integrator和simulation来读取checkpoint
-	rstfile_p = conf['rstfile_p']
+    rstfile_p = conf['rstfile_p']
     tmp_integrator = mm.VerletIntegrator(0.001)
     tmp_plat = mm.Platform.getPlatformByName(conf['platform'])  # 用CPU读，避免GPU的问题
-	tmp_prop = conf['prop']
+    tmp_prop = conf['prop']
     tmp_sim = app.Simulation(topology, system, tmp_integrator, tmp_plat, tmp_prop)
     
     with open(rstfile_p, 'rb') as f:
