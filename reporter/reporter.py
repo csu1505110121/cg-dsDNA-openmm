@@ -25,6 +25,29 @@ from functions.angles import harmonic_cos_angle_form
 from functions.bonds import harmonic_bond_form
 from functions.nonbonded import *
 
+class BoxSizeReporter(object):
+    def __init__(self, file, reportInterval):
+        self._file = open(file, 'w') if isinstance(file, str) else file
+        self._reportInterval = reportInterval
+
+    def __del__(self):
+        if hasattr(self, '_file') and isinstance(self._file, str):
+            self._file.close()
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False, True) # 最后一个 True 表示需要读取 PBC 向量
+
+    def report(self, simulation, state):
+        # 获取当前的周期性盒子向量
+        vectors = state.getPeriodicBoxVectors()
+        a = vectors[0][0].value_in_unit(unit.nanometer)
+        b = vectors[1][1].value_in_unit(unit.nanometer)
+        c = vectors[2][2].value_in_unit(unit.nanometer)
+        
+        step = simulation.currentStep
+        print(f"Step: {step} | Box Vectors (nm): a={a:.3f}, b={b:.3f}, c={c:.3f}", file=self._file)
+
 
 class EnergyDecompositionReporter(object):
 	def __init__(self, file, reportInterval, labels):
