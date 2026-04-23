@@ -179,12 +179,14 @@ def _sp_estimation(data, conf):
 	return energies
 
 
-def _get_xyz_from_checkpoint(rstfile_p, topology, system, conf):
+def _get_xyz_from_checkpoint(topology, system, conf):
     """从checkpoint文件中读取坐标"""
     # 用一个临时的integrator和simulation来读取checkpoint
+	rstfile_p = conf['rstfile_p']
     tmp_integrator = mm.VerletIntegrator(0.001)
     tmp_plat = mm.Platform.getPlatformByName(conf['platform'])  # 用CPU读，避免GPU的问题
-    tmp_sim = app.Simulation(topology, system, tmp_integrator, tmp_plat)
+	tmp_prop = conf['prop']
+    tmp_sim = app.Simulation(topology, system, tmp_integrator, tmp_plat, tmp_prop)
     
     with open(rstfile_p, 'rb') as f:
         tmp_sim.loadCheckpoint(f)
@@ -280,7 +282,7 @@ def md(data, conf):
 		if conf['md'] == 'md':
 			xyz = np.stack(data['xyz'].values) * 0.1 * unit.nanometer
 		else:
-			xyz = _get_xyz_from_checkpoint(conf['rstfile_p'], topology, system, conf)
+			xyz = _get_xyz_from_checkpoint(topology, system, conf)
 
 		system = _addrigid(system, xyz, sys_info)
 
