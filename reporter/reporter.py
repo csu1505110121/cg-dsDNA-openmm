@@ -248,6 +248,7 @@ def md(data, conf):
 			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
+			print('VECTORS: {}'.format(simulation.context.getState(getPositions=True).getPeriodicBoxVectors()))
 	
 	if conf['md'] == 'restart':
 
