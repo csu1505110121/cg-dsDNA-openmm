@@ -420,6 +420,11 @@ def md(data, conf):
 	# add reporter for trajectory
 	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
 																												# True = wrap; False = leave it there
+
+
+	simulation.reporters.append(BoxSizeReporter(stdout, conf['interval']))
+
+
 #	simulation.reporters.append(app.StateDataReporter(
 #    'debug.log', 
 #    conf['interval'], 
