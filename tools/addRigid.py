@@ -58,7 +58,8 @@ def _addrigid(system, positions, info_conf):
 #	# retrieve the positions from the simulation
 #	state = simulation.context.getState(getPositions=True)
 #	positions = state.getPositions()
-
+	bodies = info_conf['rigidbodies']
+	
 	# Remove any constraints involving particles in rigid bodies.
 	for i in range(system.getNumConstraints()-1, -1, -1):
 		p1, p2, distance = system.getConstraintParameters(i)
@@ -68,12 +69,12 @@ def _addrigid(system, positions, info_conf):
 	# Loop over rigid bodies and process them.
 	#N_protein = info_conf['protein']
 	#N_DNA     = info_conf['DNA']
-	bodies = info_conf['rigidbodies']
+	
 	for particles in bodies:
 		if len(particles) < 5:
 			# All the particles will be "real" particles.
 			realParticles = particles
-			realParticlesMasses = [system.getParticleMass(i) for i in particles]
+			realParticleMasses = [system.getParticleMass(i) for i in particles]
 
 		else:
 			# Select four particles to use as the "real" particles.  All others will be virtual sites.
