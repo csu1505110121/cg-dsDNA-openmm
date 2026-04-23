@@ -153,7 +153,7 @@ def md(data, conf):
 
 
 	vectors = (conf['pbc']) * unit.nanometers
-	#system.setDefaultPeriodicBoxVectors(*vectors)
+	system.setDefaultPeriodicBoxVectors(*vectors)
 	topology.setPeriodicBoxVectors(vectors)
 
 	# load the coordinate you want to estimate the energy
@@ -236,7 +236,9 @@ def md(data, conf):
 			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
+			simulation.context.computeVirtualSites()
 			simulation.context.applyConstraints(1e-6) # for test 
+			simulation.context.computeVirtualSites()
 		else:
 			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
