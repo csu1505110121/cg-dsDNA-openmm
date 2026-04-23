@@ -27,6 +27,7 @@ from functions.nonbonded import *
 
 class BoxSizeReporter(object):
     def __init__(self, file, reportInterval):
+        # file 可以是文件名字符串，也可以是 sys.stdout (控制台)
         self._file = open(file, 'w') if isinstance(file, str) else file
         self._reportInterval = reportInterval
 
@@ -36,17 +37,32 @@ class BoxSizeReporter(object):
 
     def describeNextReport(self, simulation):
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False, True) # 最后一个 True 表示需要读取 PBC 向量
+        return (steps, False, False, False, False, True) # 最后一个 True 获取 PBC 向量
 
     def report(self, simulation, state):
-        # 获取当前的周期性盒子向量
+        # 获取当前状态的周期性盒子向量
+        # vectors 是一个包含三个 Vec3 对象的元组
         vectors = state.getPeriodicBoxVectors()
-        a = vectors[0][0].value_in_unit(unit.nanometer)
-        b = vectors[1][1].value_in_unit(unit.nanometer)
-        c = vectors[2][2].value_in_unit(unit.nanometer)
+        
+        # 将单位转换为纳米并提取数值
+        v1 = vectors[0].value_in_unit(unit.nanometer)
+        v2 = vectors[1].value_in_unit(unit.nanometer)
+        v3 = vectors[2].value_in_unit(unit.nanometer)
         
         step = simulation.currentStep
-        print(f"Step: {step} | Box Vectors (nm): a={a:.3f}, b={b:.3f}, c={c:.3f}", file=self._file)
+        
+        # 格式化打印：打印出 3x3 矩阵的形式或单行形式
+        output = (
+            f"Step: {step}\n"
+            f"  v1: ({v1[0]:10.4f}, {v1[1]:10.4f}, {v1[2]:10.4f}) nm\n"
+            f"  v2: ({v2[0]:10.4f}, {v2[1]:10.4f}, {v2[2]:10.4f}) nm\n"
+            f"  v3: ({v3[0]:10.4f}, {v3[1]:10.4f}, {v3[2]:10.4f}) nm"
+        )
+        
+        print(output, file=self._file)
+        # 如果是打印到文件，建议 flush 保证实时写入
+        if hasattr(self._file, 'flush'):
+            self._file.flush()
 
 
 class EnergyDecompositionReporter(object):
