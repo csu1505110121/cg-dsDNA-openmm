@@ -322,228 +322,27 @@ def md(data, conf):
 			simulation.minimizeEnergy()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#	if conf['md'] == 'md':
-#		#simulation.context.setPositions(xyz)
-#		# set up rigid bodies
-#		if conf['setrigid'] != 0:
-#			#state = simulation.context.getState(getPositions=True)
-#			#positions = state.getPositions()
-#			print('Applying constraints!')
-#			system = _addrigid(system, xyz, sys_info)
-#			print("After _addrigid vectors:", system.getDefaultPeriodicBoxVectors())
-#
-#
-#
-#
-#			system.setDefaultPeriodicBoxVectors(*vectors)
-#			print("After setDefault vectors:", system.getDefaultPeriodicBoxVectors())
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#			simulation = app.Simulation(topology, system, integrator, plat, prop)
-#			simulation.context.setPositions(xyz)
-#			simulation.context.computeVirtualSites()
-#			simulation.context.applyConstraints(1e-6) # for test 
-#			simulation.context.computeVirtualSites()
-#			print('VECTORS: {}'.format(simulation.context.getState(getPositions=True).getPeriodicBoxVectors()))
-#		else:
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#			system.setDefaultPeriodicBoxVectors(*vectors)
-#			simulation = app.Simulation(topology, system, integrator, plat, prop)
-#			simulation.context.setPositions(xyz)
-#			print('VECTORS: {}'.format(simulation.context.getState(getPositions=True).getPeriodicBoxVectors()))
-#	
-#	if conf['md'] == 'restart':
-#
-#		# set up rigid bodies
-#		if conf['setrigid'] != 0:
-#			tmp_simu = app.Simulation(topology, system, integrator, plat, prop)
-#			with open(conf['rstfile_p'],'rb') as f:
-#				tmp_simu.loadCheckpoint(f)
-#
-#			state = tmp_simu.context.getState(getPositions=True, getVelocities=True)
-#			old_vectors = state.getPeriodicBoxVectors()
-#			old_positions = state.getPositions()
-#			old_velocities = state.getVelocities()
-#
-#			v1 = old_vectors[0].value_in_unit(unit.nanometer)
-#			v2 = old_vectors[1].value_in_unit(unit.nanometer)
-#			v3 = old_vectors[2].value_in_unit(unit.nanometer)
-#			aligned_vectors = (
-#                mm.Vec3(unit.norm(v1), 0, 0),
-#                mm.Vec3(v2[0], v2[1], 0),
-#                mm.Vec3(v3[0], v3[1], v3[2])
-#            ) * unit.nanometers
-#
-#			del tmp_simu
-#			print('Applying constraints!')
-#			system = _addrigid(system, old_positions, sys_info)
-#			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#			simulation = app.Simulation(topology, system, _integrator, plat, prop)
-#			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
-#			simulation.context.setPositions(old_positions)
-#			simulation.context.computeVirtualSites()
-#			simulation.context.applyConstraints(1e-6)
-#			simulation.context.setVelocities(old_velocities)
-#		else:
-#			simulation = app.Simulation(topology, system, integrator, plat, prop)
-#			with open(conf['rstfile_p'],'rb') as f:
-#				simulation.loadCheckpoint(f)
-#
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#
-#			state = simulation.context.getState(getPositions=True, getVelocities=True)
-#			old_vectors = state.getPeriodicBoxVectors()
-#			old_positions = state.getPositions()
-#			old_velocities = state.getVelocities()
-#
-#			v1 = old_vectors[0].value_in_unit(unit.nanometer)
-#			v2 = old_vectors[1].value_in_unit(unit.nanometer)
-#			v3 = old_vectors[2].value_in_unit(unit.nanometer)
-#			aligned_vectors = (
-#                mm.Vec3(unit.norm(v1), 0, 0),
-#                mm.Vec3(v2[0], v2[1], 0),
-#                mm.Vec3(v3[0], v3[1], v3[2])
-#            ) * unit.nanometers
-#			simulation.context.setPeriodicBoxVectors(*aligned_vectors)
-#			simulation.context.setPositions(old_positions)
-#			simulation.context.setVelocities(old_velocities)
-#
-#			
-#
-#	if conf['md'] == 'slab':
-#
-#		# set up rigid bodies
-#		if conf['setrigid'] != 0:
-#			tmp_simu = app.Simulation(topology, system, integrator, plat, prop)
-#			with open(conf['rstfile_p'],'rb') as f:
-#				tmp_simu.loadCheckpoint(f)
-#
-#			state = tmp_simu.context.getState(getPositions=True, getVelocities=True)
-#			old_vectors = state.getPeriodicBoxVectors()
-#			old_positions = state.getPositions()
-#			old_velocities = state.getVelocities()
-#
-#			new_z = old_vectors[2] * conf['vecScale']
-#			new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
-#			
-#			#tmp_simu.context.setPeriodicBoxVectors(*new_vectors)
-#			#tmp_simu.context.setPositions(old_positions)
-#			#tmp_simu.context.setVelocities(old_velocities)
-#
-#			del tmp_simu			
-#
-#			#state = simu.context.getState(getPositions=True)
-#			#positions = state.getPositions()
-#			print('Applying constraints!')
-#			system = _addrigid(system, old_positions, sys_info)
-#			_integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#
-#			simulation = app.Simulation(topology, system, _integrator, plat, prop)
-#			simulation.context.setPeriodicBoxVectors(*new_vectors)
-#			simulation.context.setPositions(old_positions)
-#			simulation.context.setVelocities(old_velocities)
-#
-#		else:
-#			with open(conf['rstfile_p'],'rb') as f:
-#				simulation.loadCheckpoint(f)
-#			if conf['ensemble'] == 'NPT':
-#				ref_bar = float(conf['ref_bar'])
-#				r_bar_freq = int(conf['ref_bar_freq'])
-#				system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
-#
-#
-#			state = simulation.context.getState(getPositions=True, getVelocities=True)
-#			old_vectors = state.getPeriodicBoxVectors()
-#			old_positions = state.getPositions()
-#			old_velocities = state.getVelocities()
-#	
-#			new_z = old_vectors[2] * conf['vecScale']
-#			new_vectors = (old_vectors[0], old_vectors[1], new_z) * unit.nanometers
-#	
-#			simulation.context.setPeriodicBoxVectors(*new_vectors)
-#			simulation.context.setPositions(old_positions)
-#			simulation.context.setVelocities(old_velocities)
-#			
-#
-#
-#		simulation.minimizeEnergy()
-#
-#
-#	# section for minimization
-#	if conf['md'] == 'md':
-#		print('Starting minimization !')
-#		s_time = time.perf_counter()
-#		simulation.minimizeEnergy()
-#		positions = simulation.context.getState(getPositions=True).getPositions()
-#		with open('minimized_structure.pdb', 'w') as f:
-#			app.PDBFile.writeFile(topology, positions, f)	
-#		e_time = time.perf_counter()
-#		print('Elasping: {:.3f} seconds'.format(e_time - s_time))
-#
-#	if conf['md'] == 'md': # initializing the velocity according to TEMP
-#		simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
-
-	# add reporter for trajectory
 	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
 																												# True = wrap; False = leave it there
 
 
-	simulation.reporters.append(BoxSizeReporter('debug.log', conf['interval']))
+	#simulation.reporters.append(BoxSizeReporter('debug.log', conf['interval']))
 
+	monitorfile = conf['monitorfile']
 
-#	simulation.reporters.append(app.StateDataReporter(
-#    'debug.log', 
-#    conf['interval'], 
-#    step=True, 
-#    potentialEnergy=True, 
-#    temperature=True, 
-#    volume=True,      
-#    density=True,     
-#    progress=True, 
-#    remainingTime=True, 
-#    speed=True, 
-#    totalSteps=conf['step']
-#))
-
-
+	simulation.reporters.append(app.StateDataReporter(
+    monitorfile, 
+    conf['interval'], 
+    step=True, 
+    potentialEnergy=True, 
+    temperature=True, 
+    volume=True,      
+    density=True,     
+    progress=True, 
+    remainingTime=True, 
+    speed=True, 
+    totalSteps=conf['step']
+	))
 
 	# chkpoint reporter/restart file
 	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
