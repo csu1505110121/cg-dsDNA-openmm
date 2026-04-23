@@ -280,7 +280,7 @@ def md(data, conf):
 		if conf['md'] == 'md':
 			xyz = np.stack(data['xyz'].values) * 0.1 * unit.nanometer
 		else:
-			xyz = _get_xyz_from_checkpoint(conf['rstfile_p'], topology, system)
+			xyz = _get_xyz_from_checkpoint(conf['rstfile_p'], topology, system, conf)
 
 		system = _addrigid(system, xyz, sys_info)
 
