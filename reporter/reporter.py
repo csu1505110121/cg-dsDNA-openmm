@@ -153,13 +153,8 @@ def md(data, conf):
 
 
 	vectors = (conf['pbc']) * unit.nanometers
-	system.setDefaultPeriodicBoxVectors(*vectors)
+	#system.setDefaultPeriodicBoxVectors(*vectors)
 	topology.setPeriodicBoxVectors(vectors)
-
-
-	# remove the CMMotion
-	force  = mm.CMMotionRemover()
-	system.addForce(force)
 
 	# load the coordinate you want to estimate the energy
 	# convert series into numpy for performance
@@ -212,6 +207,11 @@ def md(data, conf):
 		system.addForce(U_vdw)
 	system.addForce(U_elec)
 
+
+	# remove the CMMotion
+	force  = mm.CMMotionRemover()
+	system.addForce(force)
+
 	TEMP = conf['temperature']
 	plat = mm.Platform.getPlatformByName(conf['platform'])
 	prop = conf['prop']
@@ -233,10 +233,12 @@ def md(data, conf):
 			#positions = state.getPositions()
 			print('Applying constraints!')
 			system = _addrigid(system, xyz, sys_info)
+			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
 			simulation.context.applyConstraints(1e-6) # for test 
 		else:
+			system.setDefaultPeriodicBoxVectors(*vectors)
 			simulation = app.Simulation(topology, system, integrator, plat, prop)
 			simulation.context.setPositions(xyz)
 	
