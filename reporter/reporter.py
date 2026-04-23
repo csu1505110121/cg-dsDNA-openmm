@@ -422,7 +422,7 @@ def md(data, conf):
 																												# True = wrap; False = leave it there
 
 
-	simulation.reporters.append(BoxSizeReporter(stdout, conf['interval']))
+	simulation.reporters.append(BoxSizeReporter('debug.log', conf['interval']))
 
 
 #	simulation.reporters.append(app.StateDataReporter(
