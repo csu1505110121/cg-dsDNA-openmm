@@ -239,6 +239,7 @@ def md(data, conf):
 			simulation.context.computeVirtualSites()
 			simulation.context.applyConstraints(1e-6) # for test 
 			simulation.context.computeVirtualSites()
+			print('VECTORS: {}'.format(simulation.context.getState(getPositions=True).getPeriodicBoxVectors()))
 		else:
 			if conf['ensemble'] == 'NPT':
 				ref_bar = float(conf['ref_bar'])
@@ -393,6 +394,20 @@ def md(data, conf):
 	# add reporter for trajectory
 	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
 																												# True = wrap; False = leave it there
+#	simulation.reporters.append(app.StateDataReporter(
+#    'debug.log', 
+#    conf['interval'], 
+#    step=True, 
+#    potentialEnergy=True, 
+#    temperature=True, 
+#    volume=True,      
+#    density=True,     
+#    progress=True, 
+#    remainingTime=True, 
+#    speed=True, 
+#    totalSteps=conf['step']
+#))
+
 
 
 	# chkpoint reporter/restart file
