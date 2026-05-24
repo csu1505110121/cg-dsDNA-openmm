@@ -115,11 +115,11 @@ if __name__ == '__main__':
 	from reporter.reporter import  md
 	
 	info_conf = {
-				'xyz':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/protein_x4000_207_x5/complex_addTER.pdb',
-				'protein':4000,
-				'DNA':5,
+				'xyz':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/protein_x800_32_x20/complex_addTER.pdb',
+				'protein':800,
+				'DNA':20,
 				'fn_protein':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/rigid.pdb',
-				'fn_DNA':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/207bp.pdb',
+				'fn_DNA':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/32bp.pdb',
 				'cellVector1':(1000,0,0),
 				'cellVector2':(0,1000,0),
 				'cellVector3':(0,0,1000),
