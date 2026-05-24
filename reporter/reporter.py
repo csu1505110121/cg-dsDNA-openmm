@@ -19,6 +19,7 @@ if str(project_root) not in sys.path:
 from tools.model_build import build_system
 from tools.converting import readDUMPFILE
 from tools.addRigid import _addrigid
+from tool.spsfgen import genPSF
 from tools.io import STRSUMMARY
 from parameters.load_params import readParam
 from functions.angles import harmonic_cos_angle_form
@@ -37,21 +38,19 @@ class BoxSizeReporter(object):
 
     def describeNextReport(self, simulation):
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False, True) # 最后一个 True 获取 PBC 向量
+        return (steps, False, False, False, False, True) # get PBC vector
 
     def report(self, simulation, state):
-        # 获取当前状态的周期性盒子向量
-        # vectors 是一个包含三个 Vec3 对象的元组
         vectors = state.getPeriodicBoxVectors()
         
-        # 将单位转换为纳米并提取数值
+        # unit converting
         v1 = vectors[0].value_in_unit(unit.nanometer)
         v2 = vectors[1].value_in_unit(unit.nanometer)
         v3 = vectors[2].value_in_unit(unit.nanometer)
         
         step = simulation.currentStep
         
-        # 格式化打印：打印出 3x3 矩阵的形式或单行形式
+        # format printing
         output = (
             f"Step: {step}\n"
             f"  v1: ({v1[0]:10.4f}, {v1[1]:10.4f}, {v1[2]:10.4f}) nm\n"
@@ -60,7 +59,7 @@ class BoxSizeReporter(object):
         )
         
         print(output, file=self._file)
-        # 如果是打印到文件，建议 flush 保证实时写入
+        # print to file using flushing
         if hasattr(self._file, 'flush'):
             self._file.flush()
 
@@ -202,6 +201,16 @@ def md(data, conf):
 
 	# store the all infomation 
 	sys_info = STRSUMMARY(data)
+
+	# generating fake topology for trajectory visualisation
+	#           only contains bonds, angles, charge, and mass
+	if conf['topology']:
+		fn_topo = conf['topology']
+		genPSF(data,fn_topo)
+	else:
+		fn_topo = 'test.psf'
+		genPSF(data,fn_topo)
+
 
 	#print(data)
 	topology, system, = build_system(data)
