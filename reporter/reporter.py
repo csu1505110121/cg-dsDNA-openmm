@@ -19,7 +19,7 @@ if str(project_root) not in sys.path:
 from tools.model_build import build_system
 from tools.converting import readDUMPFILE
 from tools.addRigid import _addrigid
-from tool.spsfgen import genPSF
+from tools.spsfgen import genPSF
 from tools.io import STRSUMMARY
 from parameters.load_params import readParam
 from functions.angles import harmonic_cos_angle_form
