@@ -204,7 +204,7 @@ def md(data, conf):
 
 	# generating fake topology for trajectory visualisation
 	#           only contains bonds, angles, charge, and mass
-	if conf['topology']:
+	if 'topology' in conf:
 		fn_topo = conf['topology']
 		genPSF(data,fn_topo)
 	else:
