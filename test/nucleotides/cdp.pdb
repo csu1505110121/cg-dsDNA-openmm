@@ -1,0 +1,40 @@
+REMARK   DATE:     2/ 5/21     14:32: 0      CREATED BY USER: nathan                  
+ATOM      1  C4' CDP C   1      -1.091   1.260   0.370  1.00  0.00      CDP 
+ATOM      2  H4' CDP C   1      -1.235   2.122   1.057  1.00  0.00      CDP 
+ATOM      3  O4' CDP C   1      -0.057   0.440   0.955  1.00  0.00      CDP 
+ATOM      4  C1' CDP C   1       1.200   1.013   0.661  1.00  0.00      CDP 
+ATOM      5  H1' CDP C   1       1.437   1.576   1.593  1.00  0.00      CDP 
+ATOM      6  N1  CDP C   1       2.265   0.003   0.399  1.00  0.00      CDP 
+ATOM      7  C6  CDP C   1       3.470   0.283   0.996  1.00  0.00      CDP 
+ATOM      8  H6  CDP C   1       3.495   1.178   1.617  1.00  0.00      CDP 
+ATOM      9  C5  CDP C   1       4.538  -0.514   0.847  1.00  0.00      CDP 
+ATOM     10  H5  CDP C   1       5.486  -0.294   1.338  1.00  0.00      CDP 
+ATOM     11  C2  CDP C   1       2.141  -1.114  -0.446  1.00  0.00      CDP 
+ATOM     12  O2  CDP C   1       1.062  -1.324  -1.032  1.00  0.00      CDP 
+ATOM     13  N3  CDP C   1       3.218  -1.942  -0.595  1.00  0.00      CDP 
+ATOM     14  C4  CDP C   1       4.407  -1.679   0.021  1.00  0.00      CDP 
+ATOM     15  N4  CDP C   1       5.491  -2.497  -0.124  1.00  0.00      CDP 
+ATOM     16  H41 CDP C   1       6.359  -2.299   0.331  1.00  0.00      CDP 
+ATOM     17  H42 CDP C   1       5.450  -3.321  -0.689  1.00  0.00      CDP 
+ATOM     18  C2' CDP C   1       1.021   1.983  -0.502  1.00  0.00      CDP 
+ATOM     19 H2'' CDP C   1       1.705   1.766  -1.351  1.00  0.00      CDP 
+ATOM     20  O2' CDP C   1       1.234   3.301  -0.065  1.00  0.00      CDP 
+ATOM     21  H2' CDP C   1       2.173   3.433   0.084  1.00  0.00      CDP 
+ATOM     22  C3' CDP C   1      -0.437   1.817  -0.893  1.00  0.00      CDP 
+ATOM     23  H3' CDP C   1      -0.917   2.788  -1.142  1.00  0.00      CDP 
+ATOM     24  O3' CDP C   1      -0.560   0.955  -2.020  1.00  0.00      CDP 
+ATOM     25  H3T CDP C   1      -0.128   1.362  -2.774  1.00  0.00      CDP 
+ATOM     26  C5' CDP C   1      -2.419   0.500   0.214  1.00  0.00      CDP 
+ATOM     27  H5' CDP C   1      -2.900   0.437   1.217  1.00  0.00      CDP 
+ATOM     28 H5'' CDP C   1      -3.083   1.100  -0.452  1.00  0.00      CDP 
+ATOM     29  O5' CDP C   1      -2.211  -0.829  -0.292  1.00  0.00      CDP 
+ATOM     30  PA  CDP C   1      -3.444  -1.610  -0.906  1.00  0.00      CDP 
+ATOM     31  O1A CDP C   1      -3.161  -3.062  -0.863  1.00  0.00      CDP 
+ATOM     32  O2A CDP C   1      -3.780  -1.018  -2.220  1.00  0.00      CDP 
+ATOM     33  O3A CDP C   1      -4.684  -1.261   0.183  1.00  0.00      CDP 
+ATOM     34  PB  CDP C   1      -6.245  -1.156   0.983  1.00  0.00      CDP 
+ATOM     35  O1B CDP C   1      -7.168  -0.475  -0.029  1.00  0.00      CDP 
+ATOM     36  O2B CDP C   1      -5.994  -0.317   2.237  1.00  0.00      CDP 
+ATOM     37  O3B CDP C   1      -6.637  -2.603   1.288  1.00  0.00      CDP 
+TER      38      CDP      1
+END
