@@ -43,8 +43,17 @@ def harmonic_bond_form(dataframe, Mtype='protein', use_pbc=True, force_group=1):
 						bond_force.addBond(_indice, nxt, [0.55*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
 					elif _name != 'PO4': # bond for PO4-BASE
 						bond_force.addBond(_indice, nxt, [0.575*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
-			elif _mtype == 'organic':
-				pass
+			elif _mtype == 'nucleotide':
+				for nxt in _bondlist:
+					_name = _names[nxt]
+					if _name == 'P1' and _names[_indice] == 'P2': # bond for PG-PB
+						bond_force.addBond(_indice, nxt, [0.35*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+					elif _name == 'P1' and _names[_indice] == 'P1': # bond for PB-PA
+						bond_force.addBond(_indice, nxt, [0.35*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+					elif _name == 'CR' and _names[_indice] == 'P1': # bond for PA-CR
+						bond_force.addBond(_indice, nxt, [0.45*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
+					elif _name in ['XA', 'XG', 'XC', 'XT'] and _names[_indice] == 'CR': # bond for PO4-BASE
+						bond_force.addBond(_indice, nxt, [0.435*unit.nanometer, 50*unit.kilocalorie_per_mole/unit.angstrom**2])
 			else:
 				raise('In applying Bond force, however the molecule type {} is not implemented yet'.format(_mtype))
 	
