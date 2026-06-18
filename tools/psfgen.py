@@ -19,25 +19,57 @@ if str(project_root) not in sys.path:
 from tools.io import STRSUMMARY
 from parameters.load_params import readParam
 
-HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-
-mass_dna_map = HPS_DNA.set_index('atomtype')['mass'].to_dict()
-mass_prot_map= HPS_PROT.set_index('atomtype')['mass'].to_dict()
-
-chg_dna_map  = HPS_DNA.set_index('atomtype')['charge']
-chg_prot_map = HPS_PROT.set_index('atomtype')['charge']
+#HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+#HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
+#HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
 
 
-def genPSF(dataframe, filename):
+
+def genPSF(dataframe, filename, info_conf):
 	"""
 	generate the fake PSF file to visualize trajectories
 	"""
-	info = STRSUMMARY(data)
+	info = STRSUMMARY(dataframe)
 	NCHAINS = len(info['chains'])
 	NATOMS  = len(info['atoms'])
 	NBONDS  = len(info['bonds'])
 	NANGLES = len(info['total_angles'])
+
+	if 'fn_hps_prot' in info_conf:
+		file = Path(info_conf['fn_hps_prot'])
+		if file.exists():
+			HPS_PROT = readParam(info_conf['fn_hps_prot'])
+		else:
+			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+	else:
+		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+	if 'fn_hps_DNA' in info_conf:
+		file = Path(info_conf['fn_hps_DNA'])
+		if file.exists():
+			HPS_DNA = readParam(info_conf['fn_hps_DNA'])
+		else:
+			HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
+	else:
+		HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
+	if 'fn_hps_nucleotide' in info_conf:
+		file = Path(info_conf['fn_hps_nucleotide'])
+		if file.exists():
+			HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])
+		else:
+			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
+	else:
+		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
+
+	mass_dna_map = HPS_DNA.set_index('atomtype')['mass'].to_dict()
+	mass_prot_map= HPS_PROT.set_index('atomtype')['mass'].to_dict()
+	mass_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['mass'].to_dict()
+	
+	chg_dna_map  = HPS_DNA.set_index('atomtype')['charge']
+	chg_prot_map = HPS_PROT.set_index('atomtype')['charge']
+	chg_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['charge']
+
+
+
 
 	_chains = dataframe['chain'].tolist()
 	_names = dataframe['name'].tolist()
@@ -59,6 +91,7 @@ def genPSF(dataframe, filename):
 		#----start of NATOM--------#
 		f.write('{:>8d} !NATOM\n'.format(NATOMS))
 		for _indice, _chain, _resname, _name in zip(_indices, _chains, _resnames, _names):
+			#print(_indice, _chain, _resname, _name)
 			# INDEX + CHAIN + CHAIN ID + RESNAME + ATOM NAME + ATOM TYPE + CHARGE + MASS + 0
 			if _resname in HPS_PROT['atomtype'].values:
 				_charge = chg_prot_map.get(_resname)
@@ -66,6 +99,9 @@ def genPSF(dataframe, filename):
 			if _name in HPS_DNA['atomtype'].values:
 				_charge = chg_dna_map.get(_name)
 				_mass   = mass_dna_map.get(_name)
+			if _name in HPS_NUCLEOTIDE['atomtype'].values:
+				_charge = chg_nucleotide_map.get(_name)
+				_mass   = mass_nucleotide_map.get(_name)
 			f.write('{:>8d} {:<5s}{:<5d}{:3s}  {:<5s}{:<5s} {:>10.6f}      {:>8.4f}           0\n'.format(_indice+1, 'U', int(_chain), _resname, _name, _name, _charge, _mass))
 
 		f.write('\n')
@@ -115,11 +151,13 @@ if __name__ == '__main__':
 	from reporter.reporter import  md
 	
 	info_conf = {
-				'xyz':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/protein_x800_32_x20/complex_addTER.pdb',
-				'protein':800,
-				'DNA':20,
-				'fn_protein':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/rigid.pdb',
+				'xyz':'/Volumes/T9-UOW/HPS_OpenMM/test/PM-ATP/PMx50_ATPx260/mixture.pdb',
+				'protein':50,
+				'DNA':0,
+				'nucleotide':260,
+				'fn_protein':'/Volumes/T9-UOW/HPS_OpenMM/test/PM-ATP/PM.pdb',
 				'fn_DNA':'/Volumes/T9-UOW/Yi_Shen_Soy_glycinin/260422_HPS_systems/constraint/32bp.pdb',
+				'fn_nucleotide':'/Volumes/T9-UOW/HPS_OpenMM/test/PM-ATP/atp.pdb',
 				'cellVector1':(1000,0,0),
 				'cellVector2':(0,1000,0),
 				'cellVector3':(0,0,1000),
