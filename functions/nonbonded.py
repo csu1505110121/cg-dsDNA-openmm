@@ -170,6 +170,7 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
 	else:
 		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+
 	if 'fn_hps_DNA' in info_conf:
 		file = Path(info_conf['fn_hps_DNA'])
 		if file.exists():
@@ -186,6 +187,9 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
 	else:
 		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
+
+
+
 
 
 
@@ -208,6 +212,7 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 	sigma_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['sigma'].to_dict()
 	lambd_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['lambda'].to_dict()
 	epsilon_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['epsilon'].to_dict()
+
 
 	sigma_dna_map = HPS_DNA.set_index('atomtype')['sigma'].to_dict()
 	lambd_dna_map = HPS_DNA.set_index('atomtype')['lambda'].to_dict()
@@ -240,7 +245,7 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 			eps = epsilon_dna_map.get(_name)
 			radii = sigma_dna_map.get(_name)
 			lba   = lambd_dna_map.get(_name)
-			is_dna = 1
+			is_dna = 1    # screen out the interaction formed between DNA-DNA 
 		elif _mtype == 'protein':
 			eps = epsilon_prot_map.get(_atype)
 			radii = sigma_prot_map.get(_atype)
@@ -250,7 +255,10 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 			eps = epsilon_nucleotide_map.get(_name)
 			radii = sigma_nucleotide_map.get(_name)
 			lba   = lambd_nucleotide_map.get(_name)
-			is_dna = 0
+			if _name in ['XA','XT','XC','XG']:
+				is_dna = 1   # screen out the interaction formed between nucleotide-nucleotide
+			else:
+				is_dna = 0  
 		if radii > max_radii:
 			max_radii = radii
 
@@ -265,6 +273,106 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 	print('CUTOFF distance for vdw force is set to {} nm'.format(4*max_radii))
 
 	return vdw_force
+
+
+def stack_nucleotide(dataframe, info_conf, use_pbc=True):
+	"""
+		Stacking interaction for nucleotide-nucleotide
+	"""
+
+	if 'fn_hps_prot' in info_conf:
+		file = Path(info_conf['fn_hps_prot'])
+		if file.exists():
+			HPS_PROT = readParam(info_conf['fn_hps_prot'])
+		else:
+			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+	else:
+		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
+	if 'fn_hps_DNA' in info_conf:
+		file = Path(info_conf['fn_hps_DNA'])
+		if file.exists():
+			HPS_DNA = readParam(info_conf['fn_hps_DNA'])
+		else:
+			HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
+	else:
+		HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
+	if 'fn_hps_nucleotide' in info_conf:
+		file = Path(info_conf['fn_hps_nucleotide'])
+		if file.exists():
+			HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])
+		else:
+			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
+	else:
+		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
+
+	if 'fn_nucleotide_stacking' in info_conf:
+		file = Path(info_conf['fn_nucleotide_stacking'])
+		if file.exists():
+			HPS_NUCLEOTIDE_STACKING = readParam(info_conf['fn_nucleotide_stacking'])
+		else:
+			HPS_NUCLEOTIDE_STACKING = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv'))
+	else:
+		HPS_NUCLEOTIDE_STACKING = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv'))
+
+
+	delta_nucleotide_map = HPS_NUCLEOTIDE_STACKING.set_index('atomtype')['delta'].to_dict()
+
+
+	## stacking part for nucleotide/BASE
+	#stack_expression = 'step(rstack -r) * (delta * (5* (sigma/r)^12 - 6*(sigma/r)^10))'
+	#stack_force	  = mm.CustomBondForce(stack_expression)
+	#stack_force.addGlobalParameter('rstack', 0.62*unit.nanometer)     # inherited from dsDNA stacking interaction
+
+	#stack_force.addPerBondParameter('sigma')
+	#stack_force.addPerBondParameter('delta')
+
+
+
+	stack_expression_per_atom = """
+		mask_val * step(rstack -r) * (delta * (5* (sigma/r)^12 - 6*(sigma/r)^10));
+						delta = (delta1 * delta2)^0.5;
+						mask_val = is_atp1 * is_atp2
+	"""
+	stack_force_1	   = mm.CustomNonbondedForce(stack_expression_per_atom)
+	stack_force_1.addGlobalParameter('rstack', 0.62*unit.nanometer)
+	stack_force_1.addGlobalParameter('sigma', 0.36*unit.nanometer)
+	stack_force_1.addPerParticleParameter('delta')
+	stack_force_1.addPerParticleParameter('is_atp')
+
+	_bondlists	= dataframe['bondlist'].tolist()
+	_indices	  = dataframe.index.tolist()
+	_Mtypes	   = dataframe['Mtype'].tolist()
+	_names		= dataframe['name'].tolist()
+	_atypes	   = dataframe['ATYPE'].tolist()
+
+	#print(_atypes)
+	#print(_names)
+
+	bonds = []
+	for _indice, _bondlist in zip(_indices, _bondlists):
+		if len(_bondlist):
+			for nxt in _bondlist:
+				bonds.append((_indice, nxt))
+
+	for _mtype, _name, _atype in zip(_Mtypes, _names, _atypes):
+		if _mtype == 'nucleotide':
+			if _name in ['XA','XT','XC','XG']:
+				is_atp = 1   # screen out the interaction formed between nucleotide-nucleotide
+				delta = delta_nucleotide_map.get(_name)
+			else:
+				is_atp = 0  
+				delta = 0.0
+			stack_force_1.addParticle([delta* unit.kilocalorie_per_mole, is_atp])
+		else:
+			stack_force_1.addParticle([0.0* unit.kilocalorie_per_mole, 0.0])
+
+	if use_pbc:
+		stack_force_1.setNonbondedMethod(mm.CustomNonbondedForce.CutoffPeriodic)
+	stack_force_1.createExclusionsFromBonds(bonds,1)
+	stack_force_1.setForceGroup(3)
+
+	return stack_force_1
+
 
 
 def elec(dataframe, info_conf, dielectric=80, C_salt=1, use_pbc=True, force_group=7):
