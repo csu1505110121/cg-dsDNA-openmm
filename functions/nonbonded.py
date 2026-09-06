@@ -19,10 +19,6 @@ if str(project_root) not in sys.path:
 
 from parameters.load_params import readParam
 
-#HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-
 
 def stack_hb_exclude_DNA(dataframe, use_pbc=True):
 	
@@ -162,33 +158,6 @@ def vdw_12_6(dataframe, info_conf, use_pbc=True, force_group=6):
 				step(r - r_cut) * (4 * epsilon * [(\\frac{\\sigma}{r})^12 - (\\frac{\\sigma}{r})^6])
 	"""
 
-#	if 'fn_hps_prot' in info_conf:
-#		file = Path(info_conf['fn_hps_prot'])
-#		if file.exists():
-#			HPS_PROT = readParam(info_conf['fn_hps_prot'])
-#		else:
-#			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#	else:
-#		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#
-#	if 'fn_hps_DNA' in info_conf:
-#		file = Path(info_conf['fn_hps_DNA'])
-#		if file.exists():
-#			HPS_DNA = readParam(info_conf['fn_hps_DNA'])
-#		else:
-#			HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	else:
-#		HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	if 'fn_hps_nucleotide' in info_conf:
-#		file = Path(info_conf['fn_hps_nucleotide'])
-#		if file.exists():
-#			HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])
-#		else:
-#			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-#	else:
-#		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-
-
 	HPS_PROT = readParam(info_conf['fn_hps_prot'])
 	HPS_DNA = readParam(info_conf['fn_hps_DNA'])
 	HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])	
@@ -282,40 +251,6 @@ def stack_nucleotide(dataframe, info_conf, use_pbc=True):
 		Stacking interaction for nucleotide-nucleotide
 	"""
 
-#	if 'fn_hps_prot' in info_conf:
-#		file = Path(info_conf['fn_hps_prot'])
-#		if file.exists():
-#			HPS_PROT = readParam(info_conf['fn_hps_prot'])
-#		else:
-#			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#	else:
-#		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#	if 'fn_hps_DNA' in info_conf:
-#		file = Path(info_conf['fn_hps_DNA'])
-#		if file.exists():
-#			HPS_DNA = readParam(info_conf['fn_hps_DNA'])
-#		else:
-#			HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	else:
-#		HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	if 'fn_hps_nucleotide' in info_conf:
-#		file = Path(info_conf['fn_hps_nucleotide'])
-#		if file.exists():
-#			HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])
-#		else:
-#			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-#	else:
-#		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-#
-#	if 'fn_nucleotide_stacking' in info_conf:
-#		file = Path(info_conf['fn_nucleotide_stacking'])
-#		if file.exists():
-#			HPS_NUCLEOTIDE_STACKING = readParam(info_conf['fn_nucleotide_stacking'])
-#		else:
-#			HPS_NUCLEOTIDE_STACKING = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv'))
-#	else:
-#		HPS_NUCLEOTIDE_STACKING = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv'))
-
 	HPS_NUCLEOTIDE_STACKING = readParam(info_conf['fn_nucleotide_stacking'])
 
 
@@ -400,31 +335,6 @@ def elec(dataframe, info_conf, dielectric=80, C_salt=1, use_pbc=True, force_grou
 
 	elec_force.addPerParticleParameter('q')
 
-
-#	if 'fn_hps_prot' in info_conf:
-#		file = Path(info_conf['fn_hps_prot'])
-#		if file.exists():
-#			HPS_PROT = readParam(info_conf['fn_hps_prot'])
-#		else:
-#			HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#	else:
-#		HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-#	if 'fn_hps_DNA' in info_conf:
-#		file = Path(info_conf['fn_hps_DNA'])
-#		if file.exists():
-#			HPS_DNA = readParam(info_conf['fn_hps_DNA'])
-#		else:
-#			HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	else:
-#		HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
-#	if 'fn_hps_nucleotide' in info_conf:
-#		file = Path(info_conf['fn_hps_nucleotide'])
-#		if file.exists():
-#			HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])
-#		else:
-#			HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
-#	else:
-#		HPS_NUCLEOTIDE = readParam(os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv'))
 
 	HPS_PROT = readParam(info_conf['fn_hps_prot'])
 	HPS_DNA = readParam(info_conf['fn_hps_DNA'])
