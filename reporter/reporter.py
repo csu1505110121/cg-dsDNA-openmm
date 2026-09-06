@@ -201,18 +201,19 @@ def md(data, conf):
 
 	# store the all infomation 
 	sys_info = STRSUMMARY(data)
+	#print(sys_info['rigidbodies'])
 
 	# generating fake topology for trajectory visualisation
 	#           only contains bonds, angles, charge, and mass
 	fn_topo = conf.get('topology','test.psf')
-	#genPSF(data,fn_topo)
-
+	genPSF(data, fn_topo, conf)
+	#print('Done with genPSF')
 
 	#print(data)
-	topology, system, = build_system(data)
-	print('Done with system construction!')
+	topology, system, = build_system(data, conf)
+	#print('Done with system construction!')
 	
-	Mtypes = ['protein']*conf['protein'] + ['DNA']*conf['DNA']
+	Mtypes = ['protein']*sum(conf['protein']) + ['DNA']*sum(conf['DNA']) + ['nucleotide']*sum(conf['nucleotide'])
 	#print(Mtypes)
 
 
@@ -232,12 +233,29 @@ def md(data, conf):
 	e_time = time.perf_counter()
 	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
+
+	print('Starting add forces: vdW')
+	s_time = time.perf_counter()
+	U_vdw = vdw_12_6(data,conf)
+	e_time = time.perf_counter()
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
+
+	print('Starting add forces: Angle')
+	s_time = time.perf_counter()
+	U_angle = harmonic_cos_angle_form(data)
+	e_time = time.perf_counter()
+	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
+
+
+
+	# Since the vdw interaction for DNA is special, so we need an individual part to assign the interaction  
 	if 'DNA' in Mtypes:
-		print('Starting add forces: Angle')
-		s_time = time.perf_counter()
-		U_angle = harmonic_cos_angle_form(data)
-		e_time = time.perf_counter()
-		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
+	#if len(set(Mtypes))==1 and list(set(Mtypes))[0] == 'DNA':
+#		print('Starting add forces: Angle')
+#		s_time = time.perf_counter()
+#		U_angle = harmonic_cos_angle_form(data)
+#		e_time = time.perf_counter()
+#		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 		print('Starting add forces: Stack + HB + Exclude + vdW')
 		s_time = time.perf_counter()
@@ -245,30 +263,47 @@ def md(data, conf):
 		e_time = time.perf_counter()
 		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
-	if 'protein' in Mtypes:
-		print('Starting add forces: vdW')
+
+	#print(Mtypes)
+	if 'nucleotide' in Mtypes:
+		print('Starting add forces: Stack + vdW')
 		s_time = time.perf_counter()
-		U_vdw = vdw_12_6(data)
+		U_stack_nucleotide = stack_nucleotide(data,conf)
 		e_time = time.perf_counter()
 		print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
+	## incorporate the vdw for Protein-Protein, Protein-DNA
+	#if 'protein' in Mtypes:
+	#	print('Starting add forces: vdW')
+	#	s_time = time.perf_counter()
+	#	U_vdw = vdw_12_6(data)
+	#	e_time = time.perf_counter()
+	#	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
+
+	
+
 	print('Starting add forces: Coul')
 	s_time = time.perf_counter()
-	U_elec = elec(data, dielectric=conf['dielectric'], C_salt=conf['C_salt'])
+	U_elec = elec(data, info_conf=conf, dielectric=conf['dielectric'], C_salt=conf['C_salt'])
 	e_time = time.perf_counter()
 	print('Elasped: {:.3f} seconds'.format(e_time - s_time))
 
 	# using defined forces
 	system.addForce(U_bond)
+	system.addForce(U_angle)
+
 	if 'DNA' in Mtypes:
-		system.addForce(U_angle)
 		system.addForce(U_stack)
 		system.addForce(U_HB)
 		system.addForce(U_exclude)
 		system.addForce(U_vdw_DNA)
 
-	if 'protein' in Mtypes:
-		system.addForce(U_vdw)
+	if 'nucleotide' in Mtypes:
+		system.addForce(U_stack_nucleotide)
+		# system.addForce(U_vdw_nucleotide)
+
+	#if 'protein' in Mtypes:
+	system.addForce(U_vdw)
 	system.addForce(U_elec)
 
 
@@ -326,8 +361,8 @@ def md(data, conf):
 			simulation.context.setPeriodicBoxVectors(*new_vecs)
 			simulation.minimizeEnergy()
 
-
-	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=False)) # enforcePeriodicBox
+	wrap = conf.get('wrap', False)
+	simulation.reporters.append(app.DCDReporter(conf['trajfile'], conf['interval'], enforcePeriodicBox=wrap)) # enforcePeriodicBox
 																												# True = wrap; False = leave it there
 
 

@@ -126,7 +126,25 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None, se
 									# CYT base
 									 "N1","C2","O2","N3","C4","N4","C5","C6",
 									 )]
-
+	elif Mtype == 'nucleotide':
+		atoms = [a for a in structure.get_atoms() if a.get_name() in (
+									# Phosphate atoms group alpha
+									"PA","O1A","O2A","O3A",
+									# Phosphate atoms group beta
+									"PB","O1B","O2B","O3B",
+									# Phosphate atoms group gamma
+									"PG","O1G","O2G","O3G",
+									# sugar atoms
+									"C1'","C2'","C3'","C4'","O4'",
+									# ADE base
+									"N1","C2","N3","C4","C5","C6","N6","N7","C8","N9",
+									# THY base
+									 "N1","C2","O2","N3","C4","O4","C5","C6",
+									# GUA base
+									 "N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9",
+									# CYT base
+									 "N1","C2","O2","N3","C4","N4","C5","C6",
+									 )]
 	# get the connectivity
 	# 
 	info = {'chain':[], 
@@ -367,8 +385,286 @@ def AA2CG(fn, Mtype='protein', visual=False, vis_fn='tmp.pdb', template=None, se
 			dumpPDB(data,vis_fn)
 
 		return data
-	elif Mtype == 'organic':
-		pass
+	
+	elif Mtype == 'nucleotide':
+		chainID = None
+		atomID  = 0
+		chains = []
+		residues = []
+
+		ADE = ["N1","C2","N3","C4","C5","C6","N6","N7","C8","N9"]
+		THY = ["N1","C2","O2","N3","C4","O4","C5","C6","C7"]
+		CYT = ["N1","C2","O2","N3","C4","N4","C5","C6"]
+		GUA = ["N1","C2","N2","N3","C4","C5","C6","O6","N7","C8","N9"]
+		SUGAR = ["C1'","C2'","C3'","C4'","O4'"]
+		PO4_A = ["PA"]
+		PO4_B = ["PB"]
+		PO4_G = ["PG"]
+
+		for i, atom in enumerate(atoms):
+			res = atom.get_parent()
+			chain = res.get_parent()
+			chains.append(chain.id)
+			residues.append(res.get_id()[1])
+		chains = sorted(set(chains))
+		residues = set(residues)
+
+		atoms_po4_a = [a for a in atoms if a.get_name() in PO4_A]
+		atoms_po4_b = [a for a in atoms if a.get_name() in PO4_B]
+		atoms_po4_g = [a for a in atoms if a.get_name() in PO4_G]
+		atoms_sugar = [a for a in atoms if a.get_name() in SUGAR]
+		atoms_base  = [a for a in atoms if a.get_name() in ADE+THY+CYT+GUA]
+
+		for chain in chains:
+			for residue in residues:
+				atom_res = []
+				for a in atoms:
+					res = a.get_parent()
+					chn = res.get_parent()
+					if res.get_id()[1] == residue and chn.id == chain:
+						atom_res.append(a)
+						resname = res.get_resname().strip()
+
+				if len(atom_res):
+					# nucleotide with 3 phosphate groups, such as ATP, CTP, GTP, TTP
+					if resname in ['ATP','CTP','GTP','TTP']:
+						# PG
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_g = [a for a in atom_res if a.get_name() in PO4_G]
+						com_po4_g = com(atoms_po4_g)
+						info['name'].append('P2')
+						info['xyz'].append(com_po4_g)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([1])
+						info['anglelist'].append([])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_g])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_g])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# PB
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_b = [a for a in atom_res if a.get_name() in PO4_B]
+						com_po4_b = com(atoms_po4_b)
+						info['name'].append('P1')
+						info['xyz'].append(com_po4_b)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([2])
+						info['anglelist'].append([0,2])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_b])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_b])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# PA
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_a = [a for a in atom_res if a.get_name() in PO4_A]
+						com_po4_a =  com(atoms_po4_a)
+						info['name'].append('P1')
+						info['xyz'].append(com_po4_a)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([3])
+						info['anglelist'].append([1,3])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_a])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_a])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# sugar ring
+						if template is None:
+							info['chain'].append(chain)
+						atoms_sugar = [a for a in atom_res if a.get_name() in SUGAR]
+						com_sugar = com(atoms_sugar)
+						info['name'].append('CR')
+						info['xyz'].append(com_sugar)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([4])
+						info['anglelist'].append([2,4])
+						is_occ    = any([a.get_occupancy() for a in atoms_sugar])
+						is_bfactor = any([a.get_bfactor() for a in atoms_sugar])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+
+					# nucleotide with 2 phosphate groups, such as ADP, CDP, GDP, TDP
+					if resname in ['ADP','CDP','GDP','TDP']:
+						# PB
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_b = [a for a in atom_res if a.get_name() in PO4_B]
+						com_po4_b = com(atoms_po4_b)
+						info['name'].append('P2')
+						info['xyz'].append(com_po4_b)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([1])
+						info['anglelist'].append([])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_b])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_b])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# PA
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_a = [a for a in atom_res if a.get_name() in PO4_A]
+						com_po4_a =  com(atoms_po4_a)
+						info['name'].append('P1')
+						info['xyz'].append(com_po4_a)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([2])
+						info['anglelist'].append([0,2])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_a])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_a])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# sugar ring
+						if template is None:
+							info['chain'].append(chain)
+						atoms_sugar = [a for a in atom_res if a.get_name() in SUGAR]
+						com_sugar = com(atoms_sugar)
+						info['name'].append('CR')
+						info['xyz'].append(com_sugar)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([3])
+						info['anglelist'].append([1,3])
+						is_occ    = any([a.get_occupancy() for a in atoms_sugar])
+						is_bfactor = any([a.get_bfactor() for a in atoms_sugar])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+
+					# nucleotide with 2 phosphate groups, such as ADP, CDP, GDP, TDP
+					if resname in ['AMP','CMP','GMP','TMP']:
+						# PA
+						if template is None:
+							info['chain'].append(chain)
+						atoms_po4_a = [a for a in atom_res if a.get_name() in PO4_A]
+						com_po4_a =  com(atoms_po4_a)
+						info['name'].append('P2')
+						info['xyz'].append(com_po4_a)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([1])
+						info['anglelist'].append([])
+						is_occ    = any([a.get_occupancy() for a in atoms_po4_a])
+						is_bfactor = any([a.get_bfactor() for a in atoms_po4_a])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						# sugar ring
+						if template is None:
+							info['chain'].append(chain)
+						atoms_sugar = [a for a in atom_res if a.get_name() in SUGAR]
+						com_sugar = com(atoms_sugar)
+						info['name'].append('CR')
+						info['xyz'].append(com_sugar)
+						info['ATYPE'].append(resname)
+						info['bondlist'].append([2])
+						info['anglelist'].append([0,2])
+						is_occ    = any([a.get_occupancy() for a in atoms_sugar])
+						is_bfactor = any([a.get_bfactor() for a in atoms_sugar])
+						if set_occ_beta is None:
+							if is_occ:
+								info['occ'].append(1)
+							else:
+								info['occ'].append(0)
+							if is_bfactor:
+								info['bfactor'].append(1)
+							else:
+								info['bfactor'].append(0)
+						
+					# BASE
+					if template is None:
+						info['chain'].append(chain)
+					atoms_base  = [a for a in atom_res if a.get_name() in ADE+THY+CYT+GUA]
+					com_base = com(atoms_base)
+					if resname in ['ATP','ADP','AMP']:
+						info['name'].append('XA')
+						info['ATYPE'].append(resname)
+						info['xyz'].append(com_base)
+					elif resname in ['CTP','CDP','CMP']:
+						info['name'].append('XC')
+						info['ATYPE'].append(resname)
+						info['xyz'].append(com_base)
+					elif resname in ['GTP','GDP','GMP']:
+						info['name'].append('XG')
+						info['ATYPE'].append(resname)
+						info['xyz'].append(com_base)
+					elif resname in ['TTP','TDP','TMP']:
+						info['name'].append('XT')
+						info['ATYPE'].append(resname)
+						info['xyz'].append(com_base)
+					info['bondlist'].append([])
+					info['anglelist'].append([])
+					is_occ    = any([a.get_occupancy() for a in atoms_base])
+					is_bfactor = any([a.get_bfactor() for a in atoms_base])
+					if set_occ_beta is None:
+						if is_occ:
+							info['occ'].append(1)
+						else:
+							info['occ'].append(0)
+						if is_bfactor:
+							info['bfactor'].append(1)
+						else:
+							info['bfactor'].append(0)
+
+		data = pd.DataFrame(data=info)
+
+		if visual:
+			dumpPDB(data,vis_fn)
+
+		return data
 
 
 
@@ -383,6 +679,7 @@ def STRSUMMARY(data:pd.DataFrame) -> dict:
 	#atomtypes = []
 	
 	_rigidlist = []
+	#print(data)
 
 	for i in data.index:
 		row = data.loc[i]
@@ -419,6 +716,10 @@ def STRSUMMARY(data:pd.DataFrame) -> dict:
 			name_tmp = row['ATYPE']
 			if name_tmp not in info['atomtypes']:
 				info['atomtypes'].append(name_tmp)
+		elif Mtype=='nucleotide':
+			name_tmp = row['ATYPE']
+			if name_tmp not in info['atomtypes']:
+				info['atomtypes'].append(name_tmp)
 
 		
 	return info
@@ -438,21 +739,31 @@ def _change_chain_name(info_conf):
 	"""
 		in the info_conf, the location of file are required to be specified
 	"""
-	chain_summary = {'protein':[],'DNA':[]}
-	if info_conf['protein']:
-		fn_protein = info_conf['fn_protein']
-		_data_protein = AA2CG(fn_protein,Mtype='protein')
-		#print(_data_protein['chain'].values)
-		#print(_data_protein)
-		#_chain_protein = set(_data_protein['chain'].values)
-		chain_summary['protein'] = _data_protein['chain'].values
-	if info_conf['DNA']:
-		fn_DNA	 = info_conf['fn_DNA']
-		_data_DNA	 = AA2CG(fn_DNA,Mtype='DNA')
-		#print(_data_DNA['chain'].values)
-		#print(_data_DNA)
-		#_chain_DNA	 = set(_data_DNA['chain'])
-		chain_summary['DNA']	 = _data_DNA['chain'].values
+	chain_summary = {'protein':[],'DNA':[],'nucleotide':[]}
+	if sum(info_conf['protein']):
+		fn_proteins = info_conf['fn_protein']
+		#print('_change_chain_name',fn_proteins)
+		for fn_protein in fn_proteins:
+			_data_protein = AA2CG(fn_protein,Mtype='protein')
+			#print(_data_protein['chain'].values)
+			#print(_data_protein)
+			#_chain_protein = set(_data_protein['chain'].values)
+			chain_summary['protein'].append(_data_protein['chain'].values)
+		#print(chain_summary['protein'])
+	if sum(info_conf['DNA']):
+		#print('DNA')
+		fn_DNAs	 = info_conf['fn_DNA']
+		for fn_DNA in fn_DNAs:
+			_data_DNA	 = AA2CG(fn_DNA,Mtype='DNA')
+			#print(_data_DNA['chain'].values)
+			#print(_data_DNA)
+			#_chain_DNA	 = set(_data_DNA['chain'])
+			chain_summary['DNA'].append(_data_DNA['chain'].values)
+	if sum(info_conf['nucleotide']):
+		fn_nucleotides = info_conf['fn_nucleotide']
+		for fn_nucleotide in fn_nucleotides:
+			_data_nucleotide = AA2CG(fn_nucleotide, Mtype='nucleotide')
+			chain_summary['nucleotide'].append(_data_nucleotide['chain'].values)
 
 	return chain_summary
 
@@ -461,17 +772,26 @@ def _set_occ_bfactor(info_conf):
 		return the occ and bfactor from the template/monomer file
 	"""
 	summary = {'protein': {'occ':[],'bfactor':[]},\
-				 'DNA':{'occ':[], 'bfactor':[]}}
-	if info_conf['protein']:
-		fn_protein = info_conf['fn_protein']
-		_data_protein = AA2CG(fn_protein, Mtype='protein')
-		summary['protein']['occ'] = _data_protein['occ'].values
-		summary['protein']['bfactor'] = _data_protein['bfactor'].values
-	if info_conf['DNA']:
-		fn_DNA     = info_conf['fn_DNA']
-		_data_DNA  = AA2CG(fn_DNA, Mtype='DNA')
-		summary['DNA']['occ'] = _data_DNA['occ'].values
-		summary['DNA']['bfactor'] = _data_DNA['bfactor'].values
+				 'DNA':{'occ':[], 'bfactor':[]},\
+				 'nucleotide':{'occ':[], 'bfactor':[]}}
+	if sum(info_conf['protein']):
+		fn_proteins = info_conf['fn_protein']
+		for fn_protein in fn_proteins:
+			_data_protein = AA2CG(fn_protein, Mtype='protein')
+			summary['protein']['occ'].append(_data_protein['occ'].values)
+			summary['protein']['bfactor'].append(_data_protein['bfactor'].values)
+	if sum(info_conf['DNA']):
+		fn_DNAs     = info_conf['fn_DNA']
+		for fn_DNA in fn_DNAs:
+			_data_DNA  = AA2CG(fn_DNA, Mtype='DNA')
+			summary['DNA']['occ'].append(_data_DNA['occ'].values)
+			summary['DNA']['bfactor'].append(_data_DNA['bfactor'].values)
+	if sum(info_conf['nucleotide']):
+		fn_nucleotides = info_conf['fn_nucleotide']
+		for fn_nucleotide in fn_nucleotides:
+			_data_nucleotide = AA2CG(fn_nucleotide, Mtype='nucleotide')
+			summary['nucleotide']['occ'].append(_data_nucleotide['occ'].values)
+			summary['nucleotide']['bfactor'].append(_data_nucleotide['bfactor'].values)
 
 	return summary
 
@@ -490,23 +810,38 @@ def _splitPDB(info_conf, vis=False):
 	total_data = {'chain':[], 'name':[], 'ATYPE':[], 'xyz':[], 'bondlist':[], 'anglelist':[]}
 	total_data = pd.DataFrame(data=total_data)
 
-	Mtypes = ['protein']*int(info_conf['protein']) + ['DNA']*int(info_conf['DNA'])
-	#print(Mtypes)
+	#Mtypes = ['protein']*int(info_conf['protein']) + ['DNA']*int(info_conf['DNA']) + ['nucleotide']*int(info_conf['nucleotide'])
+	Mtypes = ['protein']*sum(info_conf['protein']) + ['DNA']*sum(info_conf['DNA']) + ['nucleotide']*sum(info_conf['nucleotide'])
+	Mtemplates = [i for arr in [info_conf['protein'], info_conf['DNA'], info_conf['nucleotide']] for i,n in enumerate(arr) for _ in range(n)]
+
+	#print(Mtemplates)
+	#print(info_conf)
 
 	chain_summary = _change_chain_name(info_conf)
 	_chain_protein_template = chain_summary['protein']
 	_chain_DNA_template 	= chain_summary['DNA']
+	_chain_nucleotide_template = chain_summary['nucleotide']
+
+	#print('test',chain_summary)
+	#print('test-protein',_chain_protein_template)
 
 	_occ_bfactor_summary       = _set_occ_bfactor(info_conf)
-
-	#print(_chain_protein_template, _chain_DNA_template)
+	#print('_occ_bfactor_summary:',_occ_bfactor_summary)
 
 	# estimate the total chain number
-	chains_num = info_conf['protein'] * len(set(_chain_protein_template)) + info_conf['DNA'] * len(set(_chain_DNA_template))
+	#chains_num = info_conf['protein'] * len(set(_chain_protein_template)) + \
+	#						info_conf['DNA'] * len(set(_chain_DNA_template)) + \
+	#						info_conf['nucleotide'] * len(set(_chain_nucleotide_template))
+
+	chains_num = sum([n*c for n,c in zip(info_conf['protein'], [len(set(x)) for x in _chain_protein_template])] +\
+				 [n*c for n,c in zip(info_conf['DNA'], [len(set(x)) for x in _chain_DNA_template])] +\
+				 [n*c for n,c in zip(info_conf['nucleotide'], [len(set(x)) for x in _chain_nucleotide_template])])
+	print('Total chain number is {}'.format(chains_num))
 	#print('Total chain number is {}'.format(chains_num))
 	# annotate the chain number starting from 1
 	chains_id = [str(i) for i in range(1, chains_num+1)]
-	
+
+	#print(chains_id)
 
 	## SPLIT ASSEMBLED PDB INTO INVIDIDUAL PDBs
 	mol_id = 0
@@ -519,6 +854,7 @@ def _splitPDB(info_conf, vis=False):
 				break
 			elif 'ATOM' in line or 'HETATM' in line:
 				records.append(line)
+			# TER is a tag to identify the end of a certain molecule, such as protein or DNA 
 			elif 'TER' in line:
 				with open('_tmp.pdb','w') as tmp:
 					_atm_idx = 0
@@ -543,19 +879,34 @@ def _splitPDB(info_conf, vis=False):
 								_x, _y, _z, 1.0, 0.0))
 				records = []
 				Mtype = Mtypes[mol_id] # select accroding molecule type
+				Mtemplate_id = Mtemplates[mol_id] # select the corresponding template id
+				#print('Current template id: {}'.format(Mtemplate_id))
+				#print('Current template', _chain_protein_template[Mtemplate_id] if Mtype == 'protein' else _chain_DNA_template[Mtemplate_id] if Mtype == 'DNA' else _chain_nucleotide_template[Mtemplate_id])
+				_occ_bfactor = {Mtype: {'occ': _occ_bfactor_summary[Mtype]['occ'][Mtemplate_id],'bfactor': _occ_bfactor_summary[Mtype]['bfactor'][Mtemplate_id]}}
 				if Mtype == 'protein':
-					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_protein_template, set_occ_beta=_occ_bfactor_summary) 
+					#print(_occ_bfactor)
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_protein_template[Mtemplate_id], set_occ_beta=_occ_bfactor)
+					#print("AA2CG is DONE")
 				elif Mtype == 'DNA':
-					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_DNA_template, set_occ_beta=_occ_bfactor_summary) 
-					
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_DNA_template[Mtemplate_id], set_occ_beta=_occ_bfactor) 
+				elif Mtype == 'nucleotide':
+					_data = AA2CG('_tmp.pdb',Mtype, visual=False, template=_chain_nucleotide_template[Mtemplate_id], set_occ_beta=_occ_bfactor)
+
+				#print('_split_data:', _data)
+
 				_data['bondlist'] = _data['bondlist'].apply(_update_dataframe, value=len(total_data))
 				_data['anglelist'] = _data['anglelist'].apply(_update_dataframe, value=len(total_data))
 				_data['Mtype']	= Mtype # add another identifier `Mtype`
 
+
 				if Mtype == 'protein':
-					_data['chain'] = _chain_protein_template
+					_data['chain'] = _chain_protein_template[Mtemplate_id]
 				elif Mtype == 'DNA':
-					_data['chain'] = _chain_DNA_template
+					_data['chain'] = _chain_DNA_template[Mtemplate_id]
+				elif Mtype == 'nucleotide':
+					_data['chain'] = _chain_nucleotide_template[Mtemplate_id]
+
+				#print('Current _data\n',_data)
 
 				unique_chains = sorted(_data['chain'].unique())
 				# construct the chain map
@@ -567,14 +918,6 @@ def _splitPDB(info_conf, vis=False):
 
 				_data['chain'] = _data['chain'].map(chain_map)
 					#_data['chain'] = chains_id[chain_id]
-			#	elif Mtype == 'DNA':
-			#		unique_chains = sorted(_data['chain'].unique())
-			#		print(unique_chains)
-			#		_left_chain = chains_id[chain_id]
-			#		chain_id +=1
-			#		_right_chain = chains_id[chain_id]
-			#		chain_map = {unique_chains[0]:_left_chain, unique_chains[1]:_right_chain}
-			#		_data['chain'] = _data['chain'].map(chain_map)
 
 				mol_id +=1
 				#chain_id +=1
@@ -586,7 +929,8 @@ def _splitPDB(info_conf, vis=False):
 		total_data_new = total_data.copy()
 		total_data_new['chain']	= 'A'
 		dumpPDB(total_data_new, filename='total_mix.pdb')					
-
+	#print('_split_data:',total_data)
+	total_data.to_csv('test.csv', index=False)
 	return total_data
 			
 
@@ -603,23 +947,28 @@ if __name__ == '__main__':
 ###	#	print(i, row['bondlist'] ,row['anglelist'], len(row['anglelist']))
 
 
-	info_conf={'protein':100,
-				'DNA': 25,
+	info_conf={'protein':0,
+				'DNA': 0,
+				'nucleotide': 100,
 				'fn_protein':'../test/abeta.pdb',
 				'fn_DNA':'../test/mix_prot_DNA/reorder.pdb',
-				'xyz':'../test/mix_prot_DNA/mixture.pdb',
+				'fn_nucleotide':'../test/nucleotides/atp.pdb',
+				'xyz':'../test/mix_ATP/mixture.pdb',
 				}
-	fn_assemble = info_conf['xyz']
-	change_summary =  _change_chain_name(info_conf)
-	print(change_summary)
-	_occ_bfactor_summary = _set_occ_bfactor(info_conf)
-	print(_occ_bfactor_summary)
-	total_data = _splitPDB(info_conf,vis=True)
-	print(total_data)
-	info = STRSUMMARY(total_data)
-	print(info['chains'])
-	print(len(info['rigidbodies']))
+#	fn_assemble = info_conf['xyz']
+#	change_summary =  _change_chain_name(info_conf)
+#	print(change_summary)
+#	_occ_bfactor_summary = _set_occ_bfactor(info_conf)
+#	print(_occ_bfactor_summary)
+#	total_data = _splitPDB(info_conf,vis=True)
+#	print(total_data)
+#	info = STRSUMMARY(total_data)
+#	print(info['chains'])
+#	print(len(info['rigidbodies']))
 
+
+	#AA2CG('../test/nucleotides/atp.pdb', Mtype='nucleotide', visual=True, vis_fn='tmp_ATP.pdb')
+	_splitPDB(info_conf,vis=True)
 
 #	print(total_data[total_data['Mtype']=='DNA'])
 #	total_dna = total_data[total_data['Mtype']=='DNA']

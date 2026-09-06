@@ -117,7 +117,8 @@ def genPSF(dataframe, filename, info_conf):
 					f.write(' {:10d} {:10d}\n'.format(_bond[0]+1, _bond[1]+1))
 				else:
 					f.write(' {:10d} {:10d}'.format(_bond[0]+1, _bond[1]+1))
-
+		if count % 4 !=0:
+			f.write('\n')
 		f.write('\n')
 		#----end of MBOND----------#
 		
@@ -131,6 +132,8 @@ def genPSF(dataframe, filename, info_conf):
 					f.write(' {:10d} {:10d} {:10d}\n'.format(_angle[0]+1, _angle[1]+1, _angle[2]+1))
 				else:
 					f.write(' {:10d} {:10d} {:10d}'.format(_angle[0]+1, _angle[1]+1, _angle[2]+1))
+		if count % 3 !=0:
+			f.write('\n')
 		f.write('\n')
 		#----end of NTHETA --------#
 

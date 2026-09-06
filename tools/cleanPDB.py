@@ -34,42 +34,54 @@ def clean(i_conf, option='addTER'):
 
 	# parse md configuration file
 	info_conf = parseConf(i_conf)
+	#print(info_conf)
 
 	mix_ = info_conf['xyz']
 	fnout = mix_.rsplit('.')[0]+'_{}.pdb'.format(option)
 	#print(fnout)
 	output = open(fnout, 'w')
 
-	protein_ = info_conf['fn_protein']
-	if protein_:
-		N_prot   = info_conf['protein']
-	else:
-		N_prot   = 0
-	dna_     = info_conf['fn_DNA']
-	if dna_:
-		N_DNA    = info_conf['DNA']
-	else:
-		N_DNA    = 0
+	Mtypes = ['protein'] * sum(info_conf['protein']) + ['DNA'] * sum(info_conf['DNA']) + ['nucleotide'] * sum(info_conf['nucleotide'])
+	Mtemplates = [i for arr in [info_conf['protein'], info_conf['DNA'], info_conf['nucleotide']] for i,n in enumerate(arr) for _ in range(n)]
 
-	Mtypes = ['protein'] * int(N_prot) + ['DNA'] * int(N_DNA)
-	
-	if 'protein' in Mtypes:
-		atom_prot_ = _count_atoms(protein_)
-	if 'DNA' in Mtypes:
-		atom_DNA_  = _count_atoms(dna_)
+	#print(Mtypes)
+	#print(Mtemplates)
+
+	atom_prots_ 		 = []
+	atom_DNAs_  		 = []
+	atom_nucleotides_ = []
+
+	if sum(info_conf['protein']):
+		for fn_protein in info_conf['fn_protein']:
+			atom_prots_.append(_count_atoms(fn_protein))
+
+	if sum(info_conf['DNA']):
+		for fn_DNA in info_conf['fn_DNA']:
+			atom_DNAs_.append(_count_atoms(fn_DNA))
+
+	if sum(info_conf['nucleotide']):
+		for fn_nucleotide in info_conf['fn_nucleotide']:
+			atom_nucleotides_.append(_count_atoms(fn_nucleotide))
+
 
 	index_ = []
 	atom_count = 0
-	for Mtype in Mtypes:
+	for Mtype,Mtemplate in zip(Mtypes,Mtemplates):
 		if Mtype == 'protein':
+			atom_prot_ = atom_prots_[Mtemplate]
 			for x in range(atom_prot_):
 				atom_count +=1
 			index_.append(atom_count)
 		elif Mtype == 'DNA':
+			atom_DNA_ = atom_DNAs_[Mtemplate]
 			for x in range(atom_DNA_):
 				atom_count +=1
 			index_.append(atom_count)
-
+		elif Mtype == 'nucleotide':
+			atom_nucleotide_ = atom_nucleotides_[Mtemplate]
+			for x in range(atom_nucleotides_[Mtemplate]):
+				atom_count +=1
+			index_.append(atom_count)
 
 	with open(mix_, 'r') as f:
 		record_count_ = 0

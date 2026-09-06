@@ -21,8 +21,10 @@ def parseConf(fn,summary=False, ofn='mdp'):
 			'xyz':[],
 			'protein':[],
 			'DNA':[],
+			'nucleotide':[],
 			'fn_protein':[],
 			'fn_DNA':[],
+			'fn_nucleotide':[],
 			# md parameters
 			'interval':[],
 			'timestep':[],
@@ -90,6 +92,85 @@ def parseConf(fn,summary=False, ofn='mdp'):
 		info.pop('cellVector1')
 		info.pop('cellVector2')
 		info.pop('cellVector3')
+
+	## in case multiple protein chains are provided, need to convert them into a list of integers
+	if info['protein']:
+		if type(info['protein']) == str:
+			info['protein'] = [int(x) for x in info['protein'].split(',')]
+			info['fn_protein']	= [x.strip() for x in info['fn_protein'].split(',')]
+		else:
+			info['protein'] = [info['protein']]
+			info['fn_protein'] = [info['fn_protein']]
+	else:
+		info['protein'] = [int(0)]
+
+	if info['DNA']:
+		if type(info['DNA']) == str:
+			info['DNA'] = [int(x) for x in info['DNA'].split(',')]
+			info['fn_DNA']	= [x.strip() for x in info['fn_DNA'].split(',')]
+		else:
+			info['DNA'] = [info['DNA']]
+			info['fn_DNA'] = [info['fn_DNA']]
+	else:
+		info['DNA'] = [int(0)]
+
+	if info['nucleotide']:
+		if type(info['nucleotide']) == str:
+			info['nucleotide'] = [int(x) for x in info['nucleotide'].split(',')]
+			info['fn_nucleotide']	= [x.strip() for x in info['fn_nucleotide'].split(',')]
+		else:
+			info['nucleotide'] = [info['nucleotide']]
+			info['fn_nucleotide'] = [info['fn_nucleotide']]
+	else:
+		info['nucleotide'] = [int(0)]
+
+	# read the default parameters or user-defined parameters in configure file
+
+	if info['protein']:
+		if 'fn_hps_prot' in info.keys() and len(info['fn_hps_prot']):
+			file = Path(info['fn_hps_prot'])
+			if not file.exists():
+				print(f"File {info['fn_hps_prot']} does not exist and use the default parameters.")
+				info['fn_hps_prot'] = os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv')
+		else:
+			info['fn_hps_prot'] = os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv')
+	else:
+		info['fn_hps_prot'] = os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv')
+
+
+	if info['DNA']:
+		if 'fn_hps_DNA' in info.keys() and len(info['fn_hps_DNA']):
+			file = Path(info['fn_hps_DNA'])
+			if not file.exists():
+				print(f"File {info['fn_hps_DNA']} does not exist and use the default parameters.")
+				info['fn_hps_DNA'] = os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv')
+		else:
+			info['fn_hps_DNA'] = os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv')
+	else:
+		info['fn_hps_DNA'] = os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv')
+
+
+	if info['nucleotide']:
+		if 'fn_hps_nucleotide' in info.keys() and len(info['fn_hps_nucleotide']):
+			file = Path(info['fn_hps_nucleotide'])
+			if not file.exists():
+				print(f"File {info['fn_hps_nucleotide']} does not exist and use the default parameters.")
+				info['fn_hps_nucleotide'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv')
+		else:
+			info['fn_hps_nucleotide'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv')
+
+		if 'fn_nucleotide_stacking' in info.keys() and len(info['fn_nucleotide_stacking']):
+			file = Path(info['fn_nucleotide_stacking'])
+			if not file.exists():
+				print(f"File {info['fn_nucleotide_stacking']} does not exist and use the default parameters.")
+				info['fn_nucleotide_stacking'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv')
+		else:
+			info['fn_nucleotide_stacking'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv')
+	else:
+		info['fn_hps_nucleotide'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides.csv')
+		info['fn_nucleotide_stacking'] = os.path.join(project_root, 'parameters/nucleotides/hps_nucleotides_stacking.csv')
+
+
 
 	if summary:
 		with open(ofn, 'w') as f:

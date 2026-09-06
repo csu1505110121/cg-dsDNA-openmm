@@ -27,9 +27,6 @@ from tools.readConf import parseConf
 from tools.converting import generateDATA
 from reporter.reporter import EnergyDecompositionReporter, md
 
-HPS_PROT = readParam(os.path.join(project_root,'parameters/protein/hps_urry_parameters.csv'))
-HPS_DNA  = readParam(os.path.join(project_root,'parameters/dsDNA/hps_dsDNA.csv'))
-
 
 def main_exe(i_conf,dumplammps,verbose):
 	# step1: parse md configuration file

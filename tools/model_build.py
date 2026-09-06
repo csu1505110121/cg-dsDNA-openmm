@@ -19,13 +19,15 @@ if str(project_root) not in sys.path:
 from tools.io import STRSUMMARY
 from parameters.load_params import readParam
 
-HPS_PROT = readParam(os.path.join(project_root, 'parameters/protein/hps_urry_parameters.csv'))
-HPS_DNA  = readParam(os.path.join(project_root, 'parameters/dsDNA/hps_dsDNA.csv'))
 
-def build_system(data:pd.DataFrame):
+
+def build_system(data:pd.DataFrame, info_conf:dict):
 	"""
 		model construction
 	"""
+	HPS_PROT = readParam(info_conf['fn_hps_prot'])
+	HPS_DNA = readParam(info_conf['fn_hps_DNA'])
+	HPS_NUCLEOTIDE = readParam(info_conf['fn_hps_nucleotide'])	
 
 	# section of topology
 	topology = app.Topology()
@@ -44,6 +46,8 @@ def build_system(data:pd.DataFrame):
 		#_bondlist = _dataframe_tmp['bondlist'].tolist()
 		_atypes = _dataframe_tmp['ATYPE'].to_dict()
 
+		#print(_names, _atypes)
+
 		if _Mtype == 'DNA':
 			for _index in _indices:
 				if _names[_index] == 'PO4':
@@ -58,8 +62,11 @@ def build_system(data:pd.DataFrame):
 				residue_tmp = topology.addResidue(name=_atypes[_index], chain=chain_tmp)
 				atom_tmp    = topology.addAtom(name=_names[_index], element=None, residue=residue_tmp)
 				atoms.append(atom_tmp)
-		elif _Mtype == 'organic':
-			pass
+		elif _Mtype == 'nucleotide':
+			for _index in _indices:
+				residue_tmp = topology.addResidue(name=_atypes[_index], chain=chain_tmp)
+				atom_tmp    = topology.addAtom(name=_names[_index], element=None, residue=residue_tmp)
+				atoms.append(atom_tmp)
 		else:
 			raise('In building the system, however the molecule type {} is not implemented yet'.format(_Mtype))
 
@@ -71,6 +78,9 @@ def build_system(data:pd.DataFrame):
 	_bondlists = data['bondlist'].tolist()
 	_indices  = data.index.tolist()
 	_atypes   = data['ATYPE'].tolist()
+	_names    = data['name'].tolist()
+
+	#print(_atypes)
 
 	for _index, _bondlist in zip(_indices, _bondlists):
 		if len(_bondlist):
@@ -82,14 +92,19 @@ def build_system(data:pd.DataFrame):
 
 	mass_dna_map = HPS_DNA.set_index('atomtype')['mass'].to_dict()
 	mass_prot_map = HPS_PROT.set_index('atomtype')['mass'].to_dict()
+	mass_nucleotide_map = HPS_NUCLEOTIDE.set_index('atomtype')['mass'].to_dict()
+
+	#print(mass_nucleotide_map)
 
 	print('Starting build system: assign MASS part')
 	s_time = time.perf_counter()
 	# section of system
 	system = mm.System()
-	for _index, _atype in zip(_indices, _atypes):
+	for _index, _atype, _name in zip(_indices, _atypes, _names):
 		if _atype in ['ADE', 'THY', 'CYT', 'GUA']:
 			mass_tmp = mass_dna_map.get(_atype)
+		elif _atype in ['ATP', 'ADP', 'AMP', 'CTP', 'CDP', 'CMP', 'GTP', 'GDP', 'GMP', 'TTP', 'TDP', 'TMP']: # need another identifier for NUC
+			mass_tmp = mass_nucleotide_map.get(_name)
 		else:
 			mass_tmp = mass_prot_map.get(_atype)
 	
