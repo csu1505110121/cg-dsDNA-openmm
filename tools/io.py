@@ -930,7 +930,7 @@ def _splitPDB(info_conf, vis=False):
 		total_data_new['chain']	= 'A'
 		dumpPDB(total_data_new, filename='total_mix.pdb')					
 	#print('_split_data:',total_data)
-	total_data.to_csv('test.csv', index=False)
+	#total_data.to_csv('test.csv', index=False)
 	return total_data
 			
 
