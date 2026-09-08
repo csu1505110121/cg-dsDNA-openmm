@@ -326,12 +326,19 @@ def md(data, conf):
 
 		system = _addrigid(system, xyz, sys_info)
 
-
+	anisotropy = conf.get('anisotropy', [False,False,False])
 	if conf['ensemble'] == 'NPT':
-		print(f"Adding MonteCarloBarostat at {conf['ref_bar']} bar")
 		ref_bar = float(conf['ref_bar'])
 		r_bar_freq = int(conf['ref_bar_freq'])
-		system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
+		print(f"Adding MonteCarloBarostat at {conf['ref_bar']} bar")
+		if any(anisotropy):
+			system.addForce(mm.MonteCarloAnisotropicBarostat(mm.Vec3(ref_bar, ref_bar, ref_bar) * unit.bar,\
+													TEMP * unit.kelvin,\
+													anisotropy[0], anisotropy[1], anisotropy[2], \
+													r_bar_freq))
+		else:
+			system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
+
 
 
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)

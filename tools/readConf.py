@@ -34,6 +34,7 @@ def parseConf(fn,summary=False, ofn='mdp'):
 			'cellVector2':[],
 			'cellVector3':[],
 			'cellOrigin':[],
+			'anisotropy':[False,False,False],
 			# machine/platform specify
 			'platform':['CUDA'],
 			'prop':{'Threads':'1'},
@@ -61,7 +62,11 @@ def parseConf(fn,summary=False, ofn='mdp'):
 						except ValueError:
 							pass
 						info[args] = vals
-	# convert to correct platform and corresponding properties			
+	# convert to correct platform and corresponding properties
+	if info['anisotropy']:
+		if type(info['anisotropy']) == str:
+			info['anisotropy'] = [x.strip().lower() == 'true' for x in info['anisotropy'].split(',')]
+
 	if info['platform']	 == 'CUDA':
 		if 'DeviceIndex' in info.keys() and len(str(info['DeviceIndex'])):
 			deviceidx = str(info['DeviceIndex'])
