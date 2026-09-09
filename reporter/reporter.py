@@ -363,10 +363,11 @@ def md(data, conf):
 
 		if conf['md'] == 'slab':
 			state = simulation.context.getState(getPositions=True, getVelocities=True)
-			if conf['vecScale'] > 1:
+			vecscale = conf.get('vecScale', 0)
+			if vecscale > 1:
 				# if you do not want to use this vecScale, you should comment it out in your md conf files
 				old_vecs = state.getPeriodicBoxVectors()
-				new_vecs = (old_vecs[0], old_vecs[1], old_vecs[2] * conf['vecScale'])
+				new_vecs = (old_vecs[0], old_vecs[1], old_vecs[2] * vecscale)
 			else:
 				new_vecs = (conf['pbc']) * unit.nanometers # use the pbc specified in your conf file 
 			simulation.context.setPeriodicBoxVectors(*new_vecs)
