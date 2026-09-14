@@ -41,7 +41,10 @@ def parseConf(fn,summary=False, ofn='mdp'):
 			# output log file
 			'log':'log.openmm',
 			'trajfile':'trajtest.dcd',
-			'rstfile': 'checkpoint.chk'
+			'rstfile': 'checkpoint.chk',
+			# advanced parameters
+			'enhanced_sampling':0,
+			'plumed_conf':'',
 			}
 	with open(fn,'r') as f:
 		while True:
