@@ -21,6 +21,7 @@ from tools.converting import readDUMPFILE
 from tools.addRigid import _addrigid
 from tools.psfgen import genPSF
 from tools.io import STRSUMMARY
+from tools.plumed import load_plumed_script
 from parameters.load_params import readParam
 from functions.angles import harmonic_cos_angle_form
 from functions.bonds import harmonic_bond_form
@@ -182,6 +183,11 @@ def _get_xyz_from_checkpoint(topology, system, conf):
     """从checkpoint文件中读取坐标"""
     # 用一个临时的integrator和simulation来读取checkpoint
     rstfile_p = conf['rstfile_p']
+    if rstfile_p.endswith('.xml'):
+        with open(rstfile_p, encoding='utf-8') as f:
+            state = mm.XmlSerializer.deserialize(f.read())
+        return state.getPositions()
+
     tmp_integrator = mm.VerletIntegrator(0.001)
     tmp_plat = mm.Platform.getPlatformByName(conf['platform'])  # 用CPU读，避免GPU的问题
     tmp_prop = conf['prop']
@@ -340,6 +346,15 @@ def md(data, conf):
 			system.addForce(mm.MonteCarloBarostat(ref_bar *unit.bar, TEMP * unit.kelvin, r_bar_freq))
 
 
+	# section for plumed
+	if conf['enhanced_sampling']:
+		plumed_conf = conf['plumed_conf']
+		if not os.path.isfile(plumed_conf):
+			raise FileNotFoundError(f"Plumed configuration file '{plumed_conf}' not found.")
+		plumed_force = load_plumed_script(conf)
+		print(f"Plumed script '{plumed_conf}' loaded successfully.")
+		system.addForce(plumed_force)
+
 
 	integrator = mm.LangevinMiddleIntegrator(TEMP*unit.kelvin, 0.01/unit.picosecond, ts*unit.picoseconds)
 
@@ -358,15 +373,22 @@ def md(data, conf):
 		simulation.context.setVelocitiesToTemperature(TEMP * unit.kelvin)
 
 	elif conf['md'] in ['restart', 'slab']:
-		with open(conf['rstfile_p'],'rb') as f:
-			simulation.loadCheckpoint(f)
+		if str(conf['rstfile_p']).endswith('.xml'):
+			with open(conf['rstfile_p'], encoding='utf-8') as f:
+				st = mm.XmlSerializer.deserialize(f.read())
+			simulation.context.setPositions(st.getPositions())
+			simulation.context.setVelocities(st.getVelocities())
+			old_vecs = st.getPeriodicBoxVectors()
+
+		else:
+			with open(conf['rstfile_p'],'rb') as f:
+				simulation.loadCheckpoint(f)
+			old_vecs = simulation.context.getState().getPeriodicBoxVectors()
 
 		if conf['md'] == 'slab':
-			state = simulation.context.getState(getPositions=True, getVelocities=True)
 			vecscale = conf.get('vecScale', 0)
 			if vecscale > 1:
 				# if you do not want to use this vecScale, you should comment it out in your md conf files
-				old_vecs = state.getPeriodicBoxVectors()
 				new_vecs = (old_vecs[0], old_vecs[1], old_vecs[2] * vecscale)
 			else:
 				new_vecs = (conf['pbc']) * unit.nanometers # use the pbc specified in your conf file 
@@ -398,6 +420,9 @@ def md(data, conf):
 
 	# chkpoint reporter/restart file
 	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
+	# at the same time, dump the checkpoint into xml format for restart, in case restarting from different platform 
+	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'].rsplit('.',1)[-2] + '.xml',reportInterval=conf['interval'],writeState=True))
+	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval'],writeState=True))
 
 	# energy reporter
 	labels = {1:'bond',2:'angle',3:'stacking',4:'hb',5:'excluding',6:'vdw',7:'elec'}
@@ -408,6 +433,7 @@ def md(data, conf):
 	simulation.reporters.append(EnergyDecompositionReporter(conf['log'],reportInterval=conf['interval'],labels=labels))
 	simulation.step(conf['step'])
 	simulation.saveCheckpoint(conf['rstfile'])
+	simulation.saveState(conf['rstfile'].rsplit('.',1)[-2] + '.xml')
 	return None
 
 
