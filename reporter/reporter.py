@@ -422,7 +422,7 @@ def md(data, conf):
 	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval']))
 	# at the same time, dump the checkpoint into xml format for restart, in case restarting from different platform 
 	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'].rsplit('.',1)[-2] + '.xml',reportInterval=conf['interval'],writeState=True))
-	simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval'],writeState=True))
+	#simulation.reporters.append(app.CheckpointReporter(conf['rstfile'],reportInterval=conf['interval'],writeState=True))
 
 	# energy reporter
 	labels = {1:'bond',2:'angle',3:'stacking',4:'hb',5:'excluding',6:'vdw',7:'elec'}
