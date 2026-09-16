@@ -70,7 +70,7 @@ def parseConf(fn,summary=False, ofn='mdp'):
 		if type(info['anisotropy']) == str:
 			info['anisotropy'] = [x.strip().lower() == 'true' for x in info['anisotropy'].split(',')]
 
-	if info['platform']	 == 'CUDA':
+	if info['platform']	 in ['CUDA','HIP']:
 		if 'DeviceIndex' in info.keys() and len(str(info['DeviceIndex'])):
 			deviceidx = str(info['DeviceIndex'])
 			info.pop('DeviceIndex')
