@@ -102,7 +102,7 @@ def genPSF(dataframe, filename, info_conf):
 			if _name in HPS_NUCLEOTIDE['atomtype'].values:
 				_charge = chg_nucleotide_map.get(_name)
 				_mass   = mass_nucleotide_map.get(_name)
-			f.write('{:>8d} {:<5s}{:<5d}{:3s}  {:<5s}{:<5s} {:>10.6f}      {:>8.4f}           0\n'.format(_indice+1, 'U', int(_chain), _resname, _name, _name, _charge, _mass))
+			f.write('{:>8d} {:<5s}{:<5d}{:3s}  {:<5s}{:<5s} {:>10.6f}      {:>8.4f}           0\n'.format(_indice+1, 'U{}'.format(int(_chain) // 9999), int(_chain)%9999, _resname, _name, _name, _charge, _mass))
 
 		f.write('\n')
 		#----end of NATOM----------#
